@@ -1,0 +1,88 @@
+<!-- -*- mode: nxml -*- -->
+<configure xmlns="http://namespaces.zope.org/zope"
+		   i18n_domain="zope">
+	<include package="zope.component" />
+	<include package="zope.location" />
+	<include package="zope.container" />
+	<include package="zope.annotation" />
+	<include package="zope.security" />
+
+	<!-- Chat -->
+	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
+	<adapter factory=".meeting_container_storage._ClassSectionAdapter" />
+	<adapter factory=".chat_transcripts._UserTranscriptStorageAdapter"
+			 />
+	<adapter factory=".chat_transcripts.TranscriptSummary"
+			 for=".chat_transcripts._MeetingTranscriptStorage"
+			 provides=".interfaces.IExternalObject" />
+	<adapter factory=".chat_transcripts.TranscriptSummary"
+			 for=".chat_transcripts._MeetingTranscriptStorage"
+			 provides=".interfaces.IExternalObject"
+			 name="wsgi"/>
+
+	<adapter factory=".chat_transcripts.Transcript"
+			 for=".chat_transcripts._MeetingTranscriptStorage"
+			 provides=".interfaces.ITranscript" />
+
+	<!-- Socket event handling -->
+	<subscriber provides=".interfaces.ISocketEventHandler"
+				for="socketio.interfaces.ISocketIOSocket"
+				factory=".chat.ChatHandlerFactory" />
+
+
+	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
+	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
+			 name="wsgi" />
+
+	<!-- Groups and ACLs -->
+	<!-- First, make something that can store group names on the user -->
+	<class class=".users.User">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
+	<!-- As we add more of these (rule based) we'll need to give them names -->
+	<!-- TODO: Couldn't we use subscribers for this instead of names? -->
+	<adapter factory=".authorization._persistent_group_member_factory"
+			 provides=".interfaces.IGroupMember"
+			 for=".users.User" />
+
+	<!-- Users can be principals -->
+	<adapter factory=".authorization._UserPrincipal"
+			 provides=".interfaces.IPrincipal"
+			 for=".users.User" />
+
+	<!-- Allow treating arbitrary strings as IPrincipal -->
+	<adapter factory=".authorization._string_principal_factory"
+			 provides=".interfaces.IPrincipal"
+			 for="basestring"/>
+	<!-- System users are adapted specially -->
+	<adapter factory=".authorization._system_user_factory"
+			 provides=".interfaces.IPrincipal"
+			 name="zope.security.management.system_user"
+			 for="basestring" />
+	<adapter factory=".authorization._EveryoneGroup"
+			 provides=".interfaces.IGroup"
+			 name="system.Everyone" />
+	<adapter factory=".authorization._AuthenticatedGroup"
+			 provides=".interfaces.IGroup"
+			 name="system.Authenticated" />
+
+	<!-- ACL/ACE permissions -->
+	<include file="meta.zcml" package="zope.security" />
+
+	<permission
+			id="nti.actions.create"
+			title="" />
+	<permission
+			id="nti.actions.delete"
+			title="" />
+	<permission
+			id="nti.actions.update"
+			title="" />
+
+	<!-- ACL providers -->
+	<adapter factory=".authorization_acl._CreatedACLProvider" />
+	<adapter factory=".authorization_acl._ShareableModeledContentACLProvider" />
+	<adapter factory=".authorization_acl._SectionInfoACLProvider" />
+	<adapter factory=".authorization_acl._ClassInfoACLProvider" />
+	<adapter factory=".providers._ProviderACLProvider" />
+</configure>
