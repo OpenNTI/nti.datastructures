@@ -7,6 +7,14 @@
 	<include package="zope.annotation" />
 	<include package="zope.security" />
 
+	<!-- Initialization -->
+	<subscriber provides=".interfaces.IDatabaseInitializer"
+				for="ZODB.interfaces.IDatabase"
+				factory="._Dataserver._DataserverInitializer" />
+	<subscriber provides=".interfaces.IDatabaseInitializer"
+				for="ZODB.interfaces.IDatabase"
+				factory=".chat._ChatDatabaseInitializer" />
+
 	<!-- Chat -->
 	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
 	<adapter factory=".meeting_container_storage._ClassSectionAdapter" />
