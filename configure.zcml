@@ -15,6 +15,9 @@
 				for="ZODB.interfaces.IDatabase"
 				factory=".chat._ChatDatabaseInitializer" />
 
+	<!-- Events -->
+	<subscriber handler=".users.user_devicefeedback" />
+
 	<!-- Chat -->
 	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
 	<adapter factory=".meeting_container_storage._ClassSectionAdapter" />
