@@ -697,16 +697,16 @@ class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateT
 			key = _CaseInsensitiveKey( key )
 		return key
 
-	def keys(self):
+	def keys(self,key=None):
 		# TODO: Don't force this to be materialized
-		return [getattr(k,'key',k) for k in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).keys()]
+		return [getattr(k,'key',k) for k in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).keys(key)]
 
-	def items(self):
+	def items(self,key=None):
 		# TODO: Don't force this to be materialized
-		return [(getattr(k,'key',k),v) for k,v in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).items()]
+		return [(getattr(k,'key',k),v) for k,v in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).items(key)]
 
-	def iterkeys(self):
-		return (getattr(k,'key',k) for k in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).keys())
+	def iterkeys(self,key=None):
+		return (getattr(k,'key',k) for k in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).keys(key))
 
 	__iter__ = iterkeys
 
@@ -919,6 +919,11 @@ class ModDateTrackingBTreeContainer(zope.container.btree.BTreeContainer):
 		return self._SampleContainer__data.iteritems()
 
 collections.Mapping.register( ModDateTrackingBTreeContainer )
+
+class KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer(ModDateTrackingBTreeContainer):
+
+	def _newContainerData(self):
+		return KeyPreservingCaseInsensitiveModDateTrackingOOBTree()
 
 def _noop(*args): pass
 
