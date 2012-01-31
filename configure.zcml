@@ -8,6 +8,8 @@
 	<include package="zope.security" />
 
 	<!-- Initialization -->
+	<!-- Order matters here, and it seems these do come back in the
+	registered order -->
 	<subscriber provides=".interfaces.IDatabaseInitializer"
 				for="ZODB.interfaces.IDatabase"
 				factory="._Dataserver._DataserverInitializer" />
