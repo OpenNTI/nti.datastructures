@@ -1137,8 +1137,18 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		self._v_create( contained )
 		if not contained.id:
 			# TODO: Need to allow individual content types some control
-			# over this.
-			contained.id = to_external_ntiid_oid( contained )
+			# over this, specifically quizzes. This is a hack for them,
+			# which doesn't quite work: they can only generate a good container_key if
+			# they already have an ID, and so we don't take this code path
+			the_id = None
+			if getattr( contained, 'to_container_key', None ):
+				the_id = contained.to_container_key()
+				if isinstance( container, collections.Mapping ) and container.get( the_id, contained ) is not contained:
+					# Don't allow overrwriting
+					the_id = None
+			if the_id is None:
+				the_id = to_external_ntiid_oid( contained )
+			contained.id = the_id
 
 		self._v_putInContainer( container,
 								getattr(contained, StandardInternalFields.ID, None),
