@@ -9,15 +9,10 @@
 	<include package="zope.generations" />
 	<include package="zope.generations" file="subscriber.zcml" />
 
-	<!-- Initialization -->
-	<!-- Order matters here, and it seems these do come back in the
-	registered order -->
-	<subscriber provides=".interfaces.IDatabaseInitializer"
-				for="ZODB.interfaces.IDatabase"
-				factory="._Dataserver._DataserverInitializer" />
-	<subscriber provides=".interfaces.IDatabaseInitializer"
-				for="ZODB.interfaces.IDatabase"
-				factory=".chat._ChatDatabaseInitializer" />
+	<!-- Database creation and migration -->
+	<utility factory=".generations.install._DataserverSchemaManager"
+			 name="nti.dataserver"
+			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />

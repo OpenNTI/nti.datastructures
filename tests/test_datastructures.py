@@ -182,7 +182,7 @@ class TestPersistentExternalizableWeakList(unittest.TestCase):
 		assert_that( l, is_( [c1, c2, c3] ) )
 		assert_that( l, is_(l) )
 
-class TestContainedStorage(unittest.TestCase):
+class TestContainedStorage(mock_dataserver.ConfiguringTestBase):
 
 	class C(CreatedModDateTrackingObject,ContainedMixin): pass
 
