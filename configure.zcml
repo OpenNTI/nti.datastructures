@@ -6,6 +6,8 @@
 	<include package="zope.container" />
 	<include package="zope.annotation" />
 	<include package="zope.security" />
+	<include package="zope.generations" />
+	<include package="zope.generations" file="subscriber.zcml" />
 
 	<!-- Initialization -->
 	<!-- Order matters here, and it seems these do come back in the
