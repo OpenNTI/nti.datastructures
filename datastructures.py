@@ -29,11 +29,12 @@ from zope import component
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
 						 IExternalObject,
-						 ILocation, IACLProvider)
+						 ILocation)
 from . import links
 from . import ntiids
 from . import mimetype
 from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver import authorization_acl as nacl
 
 __all__ = ['toExternalObject', 'ModDateTrackingObject', 'ExternalizableDictionaryMixin',
 		   'CreatedModDateTrackingObject', 'ModDateTrackingMappingMixin', 'ModDateTrackingOOBTree',
@@ -410,12 +411,7 @@ def toExternalDictionary( self, mergeFrom=None, name=_ex_name_marker, registry=c
 	The keys and values in mergeFrom should already be external.
 	"""
 	result = LocatedExternalDict()
-	acl_prov = None
-	if hasattr( self, '__acl__' ) :
-		acl_prov = self
-	else:
-		acl_prov = IACLProvider( self, None )
-	result.__acl__ = acl_prov.__acl__ if acl_prov else ()
+	result.__acl__ = nacl.ACL( self )
 	if mergeFrom:
 		result.update( mergeFrom )
 
