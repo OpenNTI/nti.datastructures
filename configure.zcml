@@ -95,6 +95,7 @@
 	<adapter factory=".authorization_acl._SectionInfoACLProvider" />
 	<adapter factory=".authorization_acl._ClassInfoACLProvider" />
 	<adapter factory=".authorization_acl._EnclosedContentACLProvider" />
+	<adapter factory=".authorization_acl._FriendsListACLProvider" />
 	<adapter factory=".authorization_acl._LibraryTOCEntryACLProvider" />
 	<adapter factory=".providers._ProviderACLProvider" />
 </configure>
