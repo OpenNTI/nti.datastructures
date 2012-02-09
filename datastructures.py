@@ -446,6 +446,13 @@ def toExternalDictionary( self, mergeFrom=None, name=_ex_name_marker, registry=c
 
 	_ordered_pick( StandardExternalFields.CONTAINER_ID, StandardInternalFields.CONTAINER_ID )
 	_ordered_pick( StandardExternalFields.NTIID, StandardInternalFields.NTIID, StandardExternalFields.NTIID )
+	# During the transition, if there is not an NTIID, but we can find one as the ID or OID,
+	# provide that
+	if StandardExternalFields.NTIID not in result:
+		for field in (StandardExternalFields.ID,StandardExternalFields.OID):
+			if ntiids.is_valid_ntiid_string( result.get( field ) ):
+				result[StandardExternalFields.NTIID] = result[field]
+				break
 
 	if StandardExternalFields.CLASS in result:
 		mime_type = mimetype.nti_mimetype_from_object( self, use_class=False )
