@@ -13,6 +13,14 @@
 	<utility factory=".generations.install._DataserverSchemaManager"
 			 name="nti.dataserver"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
+	<!--
+	Note that this is the example database. It is added here
+	during development for automatic migrations. (We could probably manage it
+	manually somehow, but this is simpler for now.)
+	-->
+	<utility factory=".utils.example_database_initializer.ExampleDatabaseInitializer"
+			 name="nti.dataserver-example"
+			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
