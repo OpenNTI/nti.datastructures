@@ -130,6 +130,8 @@ def to_external_ntiid_oid( contained, default_oid=_ext_ntiid_oid ):
 	"""
 	# We really want the external OID, but for those weird time we may not be saved we'll
 	# allow the ID of the object, unless we are explicitly overridden
+	if _isContainedProxy(contained):
+		 contained = _getContainedProxiedObject( contained )
 	oid = toExternalOID( contained, default=(default_oid if default_oid is not _ext_ntiid_oid else str(id(contained))) )
 	if not oid:
 		return None
