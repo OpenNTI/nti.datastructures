@@ -214,7 +214,6 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 			# issue
 			logger.debug("Broken object found %s, %s", type(obj), obj)
 			result = 'Broken object'
-
 		return result
 	finally:
 		_ex_name_local.name.pop()
@@ -934,6 +933,19 @@ class KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer(ModDateTrackingB
 
 def _noop(*args): pass
 
+class _ContainedObjectValueError(ValueError):
+	"""
+	A more naturally descriptive exception for contained objects.
+	"""
+	def __init__( self, string, contained=None ):
+		ctype = type(contained)
+		cstr = 'Unable to determine'
+		try:
+			cstr = repr(contained)
+		except Exception as e:
+			cstr = '{%s}' % e
+		super(_ContainedObjectValueError,self).__init__( "%s [type: %s repr %s]" % (string, ctype, cstr) )
+
 class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	"""
 	A specialized data structure for tracking contained objects.
@@ -1111,9 +1123,9 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 
 		if not nti_interfaces.IContained.providedBy( contained ):
-			raise ValueError( "Contained object (%s) is not IContained" % type(contained) )
+			raise _ContainedObjectValueError( "Contained object is not IContained", contained )
 		if not getattr( contained, 'containerId' ):
-			raise ValueError( "Contained object (%s) has no containerId" % type(contained) )
+			raise _ContainedObjectValueError( "Contained object has no containerId", contained )
 
 		container = self.containers.get( contained.containerId, None )
 		if container is None:
@@ -1131,7 +1143,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 		## Save
 		if not contained.id and not self.set_ids:
-			raise ValueError( "Contained object has no id and we cannot give it one" )
+			raise _ContainedObjectValueError( "Contained object has no id and we are not allowed to give it one.", contained )
 
 		# Add to the connection so it can start creating an OID
 		# if we are saved, and it is Persistent but unsaved
