@@ -18,7 +18,7 @@ import BTrees.OOBTree
 import ZODB
 
 import plistlib
-import json
+import anyjson as json
 
 import six
 import numbers
