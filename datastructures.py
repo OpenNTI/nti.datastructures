@@ -456,7 +456,7 @@ def toExternalDictionary( self, mergeFrom=None, name=_ex_name_marker, registry=c
 					result[StandardExternalFields.NTIID] = result[field]
 					break
 	except ntiids.InvalidNTIIDError:
-		logger.exception( "Failed to get NTIID for object %s", self )
+		logger.exception( "Failed to get NTIID for object %s", type(self) ) # printing self probably wants to externalize
 
 	if StandardExternalFields.CLASS in result:
 		mime_type = mimetype.nti_mimetype_from_object( self, use_class=False )
