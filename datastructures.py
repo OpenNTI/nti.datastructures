@@ -573,7 +573,10 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 	""" Adds the `creator` and `createdTime` attributes. """
 	def __init__( self, *args ):
 		super(CreatedModDateTrackingObject,self).__init__( *args )
-		self.creator = None
+		# Some of our subclasses have class attributes for fixed creators.
+		# don't override those unless we have to
+		if not hasattr(self, 'creator'):
+			self.creator = None
 		self.createdTime = time.time()
 
 class PersistentCreatedModDateTrackingObject(persistent.Persistent,CreatedModDateTrackingObject):
