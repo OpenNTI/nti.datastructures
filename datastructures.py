@@ -287,7 +287,7 @@ class ModDateTrackingObject(object):
 	""" Maintains an lastModified attribute containing a time.time()
 	modification stamp. Use updateLastMod() to update this value. """
 
-	__conflict_max_keys__ = ['lastModified']
+	__conflict_max_keys__ = ['_lastModified']
 	__conflict_merge_keys__ = []
 
 	def __init__( self, *args, **kwargs ):

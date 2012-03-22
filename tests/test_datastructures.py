@@ -13,17 +13,31 @@ import persistent
 import json
 import plistlib
 from nti.dataserver.datastructures import (getPersistentState, toExternalOID, fromExternalOID, toExternalObject,
-									   ExternalizableDictionaryMixin, CaseInsensitiveModDateTrackingOOBTree,
-									   KeyPreservingCaseInsensitiveModDateTrackingOOBTree,
-									   LastModifiedCopyingUserList, PersistentExternalizableWeakList,
-									   ContainedStorage, ContainedMixin, CreatedModDateTrackingObject,
-									   to_external_representation, EXT_FORMAT_JSON, EXT_FORMAT_PLIST,
-									   PersistentExternalizableList, ExternalizableInstanceDict)
+										   ModDateTrackingObject,
+										   ExternalizableDictionaryMixin, CaseInsensitiveModDateTrackingOOBTree,
+										   KeyPreservingCaseInsensitiveModDateTrackingOOBTree,
+										   LastModifiedCopyingUserList, PersistentExternalizableWeakList,
+										   ContainedStorage, ContainedMixin, CreatedModDateTrackingObject,
+										   to_external_representation, EXT_FORMAT_JSON, EXT_FORMAT_PLIST,
+										   PersistentExternalizableList, ExternalizableInstanceDict)
 
 from nti.tests import has_attr
 import mock_dataserver
 from nti.dataserver import contenttypes, ntiids
 from nti.dataserver import interfaces as nti_interfaces
+
+def test_moddatetrackingobject_resolveConflict():
+	mto = ModDateTrackingObject()
+	oldstate = dict(mto.__dict__)
+
+	mto.lastModified = 8
+	savedstate = dict(mto.__dict__)
+
+	mto.lastModified = 10
+	newstate = dict(mto.__dict__)
+
+	d = mto._p_resolveConflict( oldstate, savedstate, newstate )
+	assert_that( d, has_entry( ModDateTrackingObject.__conflict_max_keys__[0], 10 ) )
 
 
 class TestFunctions(unittest.TestCase):
