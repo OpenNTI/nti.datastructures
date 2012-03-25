@@ -14,6 +14,8 @@
 			 name="nti.dataserver"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
+	<utility component="._Dataserver._trivial_db_transaction_cm" />
+
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
 	<subscriber handler=".activitystream.user_change_broadcaster" />
