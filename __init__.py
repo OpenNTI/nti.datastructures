@@ -63,6 +63,14 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 
 		zope.component.hooks.siteinfo = SiteInfo()
 
+	del zope
+	del transaction
+	del threading
+	del _threading_local
 else:
 	logger.info( "Monkey patching minimum libraries for gevent" )
 	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
+
+del gevent
+del logger
+del logging
