@@ -624,7 +624,12 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 		return result
 
 class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
-
+	# FIXME: This class and subclasses
+	# do not preserve custom attributes like 'lastModified'
+	# due to the implementation of __getstate__ in OOBTree.
+	# Thus, we lose them across persistence. This is hidden by
+	# defaults in another superclass. Some things compensate by checking
+	# the 'Last Modified' entry, but that's not good to have either
 	def __init__(self, *args):
 		super(ModDateTrackingOOBTree,self).__init__(*args)
 
