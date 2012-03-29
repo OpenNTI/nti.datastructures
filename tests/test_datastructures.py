@@ -13,7 +13,7 @@ import persistent
 import json
 import plistlib
 from nti.dataserver.datastructures import (getPersistentState, toExternalOID, fromExternalOID, toExternalObject,
-										   ModDateTrackingObject,
+										   ModDateTrackingObject, ModDateTrackingOOBTree,
 										   ExternalizableDictionaryMixin, CaseInsensitiveModDateTrackingOOBTree,
 										   KeyPreservingCaseInsensitiveModDateTrackingOOBTree,
 										   LastModifiedCopyingUserList, PersistentExternalizableWeakList,
@@ -38,6 +38,21 @@ def test_moddatetrackingobject_resolveConflict():
 
 	d = mto._p_resolveConflict( oldstate, savedstate, newstate )
 	assert_that( d, has_entry( ModDateTrackingObject.__conflict_max_keys__[0], 10 ) )
+
+def test_moddatetrackingoobtree_resolveConflict():
+	mto = ModDateTrackingOOBTree()
+	mto['k'] = 'v'
+	oldstate = mto.__getstate__()
+
+	mto.updateLastMod( 8 )
+	savedstate = mto.__getstate__()
+
+	mto.updateLastMod( 10 )
+	newstate = mto.__getstate__()
+
+	# Make sure it runs w/o exception
+	# TODO: How to ensure it does the right thing? We don't know the times
+	mto._p_resolveConflict( oldstate, savedstate, newstate )
 
 
 class TestFunctions(unittest.TestCase):

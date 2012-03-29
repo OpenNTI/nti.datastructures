@@ -589,6 +589,10 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 
 	def updateLastMod(self, t=None ):
 		ModDateTrackingObject.updateLastMod( self, t )
+		# FIXME: This produces artificial conflicts.
+		# Convert this and the superclass to use zope.minmax.Maximum
+		# Will require changes to some iteration places to avoid that value
+		# We really just don't want this value in the map
 		super(ModDateTrackingMappingMixin,self).__setitem__(StandardExternalFields.LAST_MODIFIED, self.lastModified )
 		return self.lastModified
 
@@ -631,13 +635,38 @@ class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree
 		return result
 
 	def _p_resolveConflict(self, oldState, savedState, newState ):
-		logger.info( 'Conflict to resolve in %s', type(self) )
 		# Our super class will generally resolve what conflicts it
 		# can, or throw an exception. If it resolves things,
 		# we just want to update our last modified time---that's the thing
 		# most likely to conflict
-		result = dict( super(ModDateTrackingOOBTree,self)._p_resolveConflict( oldState, savedState, newState ) )
-		result['lastModified'] = max( oldState['lastModified'], savedState['lastModified'], newState['lastModified'] )
+
+		# A BTree writes its state as a sequence of tuples, for each bucket.
+		# A bucket may be an OOBucket, or a tuple itself, if it is small.
+		# If we're small enough that the conflict is in this object, then
+		# it must be a tuple
+		logger.info( 'Conflict to resolve in %s', type(self) )
+		# We just make the last modified to be now
+		lm = time.time()
+		def maxing( state ):
+			if isinstance( state, tuple ):
+				state = list(state)
+				i = 0
+				while i < len(state):
+					if state[i] == StandardExternalFields.LAST_MODIFIED:
+						state[i+1] = lm
+						i += 1
+					else:
+						state[i] = maxing(state[i])
+					i += 1
+				state = tuple(state)
+			return state
+
+		# Note that we're not using super(), we're actually picking the implementation
+		# The one we get from ModDateTrackingMappingMixin fails with this structure
+		result = BTrees.OOBTree.OOBTree._p_resolveConflict( self,
+															maxing( oldState ),
+															maxing( savedState ),
+															maxing( newState ) )
 		return result
 
 import functools
