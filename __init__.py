@@ -62,6 +62,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 			adapter_hook = zope.component.hooks.read_property(adapter_hook)
 
 		zope.component.hooks.siteinfo = SiteInfo()
+		del SiteInfo
 
 	del zope
 	del transaction
@@ -72,5 +73,66 @@ else:
 	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
 
 del gevent
+
+
+# Patch zope.component.hooks.site to not be broken
+from zope.component.hooks import setSite, getSite
+def _fixed_site(s):
+	# Must use 'global' setSite/getSite values so we have
+	# a function of zero free vars.
+	# Note that our code is run in the globals of
+	# zope.component.hooks so names must match
+	old_site = getSite()
+	setSite( s )
+	try:
+		yield
+	finally:
+		setSite( old_site )
+
+
+def _patch_site():
+	import zope.component.hooks
+	from zope.interface.registry import Components
+
+	class Site(object):
+		def __init__(self):
+			self.registry = Components('components')
+		def getSiteManager(self):
+			return self.registry
+
+
+	def is_broken():
+		site = Site()
+		old_site = getSite()
+		try:
+			with zope.component.hooks.site(site):
+				raise ValueError()
+			assert None, "Should not get here"
+		except ValueError:
+			return getSite() is not old_site
+		else:
+			return True
+
+
+	if is_broken():
+		logger.info( "Monkey patching zope.component.hooks.site" )
+
+
+		closure = zope.component.hooks.site.func_closure
+		# Closes over one cell, that containing the function
+		# Changing the closure is better than changing the module
+		# because it fixes previous 'static' imports
+		orig_site = closure[0].cell_contents
+		orig_site.func_code = _fixed_site.func_code
+
+
+	assert not is_broken(), "Brokenness should be fixed"
+
+_patch_site()
+
+del _fixed_site
+del _patch_site
 del logger
 del logging
+del setSite
+del getSite

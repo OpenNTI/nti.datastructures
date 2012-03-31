@@ -657,7 +657,14 @@ class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree
 				state = list(state)
 				i = 0
 				while i < len(state):
-					if state[i] == StandardExternalFields.LAST_MODIFIED:
+					eq = False
+					try:
+						eq = (state[i] == StandardExternalFields.LAST_MODIFIED)
+					except ValueError:
+						# Probably a PersistentReference object we're not interested in
+						eq = False
+
+					if eq:
 						state[i+1] = lm
 						i += 1
 					else:
