@@ -109,9 +109,13 @@ def _patch_site():
 				raise ValueError()
 			assert None, "Should not get here"
 		except ValueError:
-			return getSite() is not old_site
+			broken = getSite() is not old_site
+			if broken:
+				# Fixup!
+				setSite( old_site )
+			return broken
 		else:
-			return True
+			assert None, "Should not get here"
 
 
 	if is_broken():
