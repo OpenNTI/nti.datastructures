@@ -39,7 +39,7 @@
 
 	<!-- Socket event handling -->
 	<subscriber provides=".interfaces.ISocketEventHandler"
-				for="socketio.interfaces.ISocketIOSocket"
+				for="nti.socketio.interfaces.ISocketIOSocket"
 				factory=".chat.ChatHandlerFactory" />
 
 
