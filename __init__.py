@@ -77,17 +77,6 @@ del gevent
 
 # Patch zope.component.hooks.site to not be broken
 from zope.component.hooks import setSite, getSite
-def _fixed_site(s):
-	# Must use 'global' setSite/getSite values so we have
-	# a function of zero free vars.
-	# Note that our code is run in the globals of
-	# zope.component.hooks so names must match
-	old_site = getSite()
-	setSite( s )
-	try:
-		yield
-	finally:
-		setSite( old_site )
 
 
 def _patch_site():
@@ -118,23 +107,12 @@ def _patch_site():
 			assert None, "Should not get here"
 
 
-	if is_broken():
-		logger.info( "Monkey patching zope.component.hooks.site" )
+	# We require 3.12.1+ which fixes this problem
 
-
-		closure = zope.component.hooks.site.func_closure
-		# Closes over one cell, that containing the function
-		# Changing the closure is better than changing the module
-		# because it fixes previous 'static' imports
-		orig_site = closure[0].cell_contents
-		orig_site.func_code = _fixed_site.func_code
-
-
-	assert not is_broken(), "Brokenness should be fixed"
+	assert not is_broken(), "Brokenness should be fixed in 3.12.1+"
 
 _patch_site()
 
-del _fixed_site
 del _patch_site
 del logger
 del logging
