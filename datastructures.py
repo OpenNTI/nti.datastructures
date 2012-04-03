@@ -45,7 +45,7 @@ __all__ = ['toExternalObject', 'ModDateTrackingObject', 'ExternalizableDictionar
 		   'ContainedStorage', 'LastModifiedCopyingUserList', 'ExternalizableInstanceDict',
 		   'to_external_representation', 'to_json_representation', 'EXT_FORMAT_JSON', 'EXT_FORMAT_PLIST',
 		   'StandardExternalFields', 'StandardInternalFields', 'toExternalDictionary',
-		   'to_external_ntiid_oid' ]
+		   'to_external_ntiid_oid', 'MergingCounter' ]
 
 from zope.container._zope_container_contained import isProxy as _isContainedProxy
 from zope.container._zope_container_contained import getProxiedObject as _getContainedProxiedObject
@@ -1383,3 +1383,18 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 		if not self.contained_type.providedBy( item ):
 			raise ValueError( "Item %s for key %s must be %s" % (item,key,self.contained_type) )
 		super(AbstractNamedContainerMap,self).__setitem__(key, item)
+
+from zope.minmax import _minmax as minmax
+
+class MergingCounter(minmax.AbstractValue):
+	"""
+	A :module:`zope.minmax` item that resolves conflicts by
+	merging the numeric value of the difference in magnitude of changes.
+	Intented to be used for increasing counters.
+	"""
+
+	def _p_resolveConflict( self, oldState, savedState, newState ):
+		saveDiff = savedState - oldState
+		newDiff = newState - oldState
+		savedState = oldState + saveDiff + newDiff
+		return savedState
