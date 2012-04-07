@@ -8,6 +8,8 @@
 	<include package="zope.security" />
 	<include package="zope.generations" />
 	<include package="zope.generations" file="subscriber.zcml" />
+	<!-- Hashed password management. Includes zope.password -->
+	<include package="z3c.bcrypt" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
