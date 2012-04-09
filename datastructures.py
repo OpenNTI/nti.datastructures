@@ -1264,10 +1264,11 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		"""
 		if contained is None or contained.containerId is None:
 			logger.debug( "Unable to delete object equal to None or with no containerId: %s", contained )
-			return
+			return None
 		container = self.containers.get( contained.containerId, None )
 		if container is None:
-			logger.debug( "Unable to delete object we have no container for: %s (%s)", contained.containerId, contained )
+			logger.debug( "Unable to delete object we have no container for: %s (%s) (%s)",
+						  contained.containerId, list(self.containers.keys()), contained )
 			return None
 
 		wrapped = self._v_wrap( contained ) # outside the catch
