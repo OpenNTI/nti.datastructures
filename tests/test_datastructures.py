@@ -26,18 +26,29 @@ import mock_dataserver
 from nti.dataserver import contenttypes, ntiids
 from nti.dataserver import interfaces as nti_interfaces
 
-def test_moddatetrackingobject_resolveConflict():
+def test_moddatetrackingobject_oldstates():
 	mto = ModDateTrackingObject()
-	oldstate = dict(mto.__dict__)
+	assert_that( mto.lastModified, is_( 0 ) )
+	assert_that( mto._lastModified, has_attr( 'value', 0 ) )
 
-	mto.lastModified = 8
-	savedstate = dict(mto.__dict__)
+	# old state
+	mto._lastModified = 32
+	assert_that( mto.lastModified, is_( 32 ) )
+	assert_that( mto._lastModified, is_( 32 ) )
 
-	mto.lastModified = 10
-	newstate = dict(mto.__dict__)
+	# updates dynamically
+	mto.updateLastMod(42)
+	assert_that( mto.lastModified, is_( 42 ) )
+	assert_that( mto._lastModified, has_attr( 'value', 42 ) )
 
-	d = mto._p_resolveConflict( oldstate, savedstate, newstate )
-	assert_that( d, has_entry( ModDateTrackingObject.__conflict_max_keys__[0], 10 ) )
+	# missing entirely
+	del mto._lastModified
+	assert_that( mto.lastModified, is_( 0 ) )
+	mto.updateLastMod( 42 )
+	assert_that( mto.lastModified, is_( 42 ) )
+	assert_that( mto._lastModified, has_attr( 'value', 42 ) )
+
+	mto._lastModified.__getstate__()
 
 def test_moddatetrackingoobtree_resolveConflict():
 	mto = ModDateTrackingOOBTree()

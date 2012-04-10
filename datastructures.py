@@ -25,7 +25,7 @@ import numbers
 
 from zope import interface
 from zope import component
-
+from zope.minmax import _minmax as minmax
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
 						 IExternalObject,
@@ -282,34 +282,55 @@ def _weakRef_toExternalOID(self):
 
 persistent.wref.WeakRef.toExternalOID = _weakRef_toExternalOID
 
+class _SafeMaximum(minmax.Maximum):
+	# FIXME: Some how, in some circumstance,
+	# getstate is finding an object with no value.
+	# don't ask me how. watch for that
+	# TODO: Could this lead to corruption?
+	def __getstate__(self):
+		try:
+			return minmax.Maximum.__getstate__( self )
+		except AttributeError:
+			logger.debug( "Problem getting state for object %s/%r/%s",
+						  self, self._p_oid, self._p_jar )
+			return 0
 
 class ModDateTrackingObject(object):
 	""" Maintains an lastModified attribute containing a time.time()
 	modification stamp. Use updateLastMod() to update this value. """
 
-	__conflict_max_keys__ = ['_lastModified']
-	__conflict_merge_keys__ = []
 
 	def __init__( self, *args, **kwargs ):
+		# NOTE: In the past, this was a simple number. That lead to dangerous
+		# conflict resolution practices, so now it's Maximum. But we don't
+		# change this in setstate, we wait until we write the modified value,
+		# to avoid writing unnecessary values. Note also that finding these
+		# objects and doing a migration is not feasible as they are /everywhere/
+		# Some subclasses may depend on being able to update last mod
+		# during construction, notably dictionaries initialized as a copy
+		self._init_modified()
 		super(ModDateTrackingObject,self).__init__( *args, **kwargs )
-		self._lastModified = 0
 
-	def __setstate__( self, state ):
-		if state and 'lastModified' in state:
-			state['_lastModified'] = state['lastModified']
-			del state['lastModified']
-		super(ModDateTrackingObject,self).__setstate__( state )
+	def _init_modified(self):
+		self._lastModified = _SafeMaximum(value=0)
 
 	def _get_lastModified(self):
 		# To make it easy to add this class as a mixin
 		# to any class, some of which may already be in the
 		# database, we handle missing last modified values
 		try:
-			return self._lastModified
+			return self._lastModified.value
 		except AttributeError:
-			return 0
+			try:
+				return self._lastModified
+			except AttributeError:
+				return 0
 	def _set_lastModified(self, lm):
-		self._lastModified = lm
+		old_lm = getattr( self, '_lastModified', None )
+		if not hasattr( old_lm, 'value' ):
+			self._lastModified = _SafeMaximum( value=lm )
+		else:
+			self._lastModified.value = lm
 	lastModified = property( _get_lastModified, _set_lastModified )
 
 	def updateLastMod(self, t=None ):
@@ -321,26 +342,6 @@ class ModDateTrackingObject(object):
 		if t is not None and t > self.lastModified:
 			self.lastModified = t
 		return self.lastModified
-
-	def _p_resolveConflict(self, oldState, savedState, newState):
-		logger.warn( 'Conflict to resolve in %s:\n\t%s\n\t%s\n\t%s', type(self), oldState, savedState, newState )
-		# TODO: This is not necessarily safe here.
-		for k in newState:
-			# cannot count on keys being both places
-			if savedState.get(k) != newState.get(k):
-				logger.info( "%s\t%s\t%s", k, savedState[k], newState[k] )
-
-		d = savedState # Start with saved state, don't lose any changes already committed.
-		for k in self.__conflict_max_keys__:
-			d[k] = max( oldState[k], savedState[k], newState[k] )
-			logger.warn( "New value for %s:\t%s", k, d[k] )
-
-		for k in self.__conflict_merge_keys__:
-			saveDiff = savedState[k] - oldState[k]
-			newDiff = newState[k] - oldState[k]
-			d[k] = oldState[k] + saveDiff + newDiff
-			logger.warn( "New value for %s:\t%s", k, d[k] )
-		return d
 
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
@@ -624,20 +625,39 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 		return result
 
 class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
-	# FIXME: This class and subclasses
+	# This class and subclasses
 	# do not preserve custom attributes like 'lastModified'
 	# due to the implementation of __getstate__ in OOBTree.
 	# Thus, we lose them across persistence. This is hidden by
 	# defaults in another superclass. Some things compensate by checking
-	# the 'Last Modified' entry, but that's not good to have either
+	# the 'Last Modified' entry, but that's not good to have either.
+	# Therefore, we override all of the methods from the superclass
+	# in terms of the dictionary entry added my ModDateTrackingMappingMixin.
+	# We want to avoid any extra objects that might get added to the connection,
+	# but never be accessed again, so we avoid the _lastModified attribute
+	# entirely (hence picking the implementations instead of super())
 	def __init__(self, *args):
-		super(ModDateTrackingOOBTree,self).__init__(*args)
+		BTrees.OOBTree.OOBTree.__init__( self, *args )
+
+	def _init_modified(self):
+		return
 
 	def toExternalDictionary(self, mergeFrom=None):
 		result = super(ModDateTrackingOOBTree,self).toExternalDictionary(mergeFrom)
 		for key, value in self.iteritems():
 			result[key] = toExternalObject( value )
 		return result
+
+	def updateLastMod(self, t=None):
+		super(ModDateTrackingMappingMixin,self).__setitem__(StandardExternalFields.LAST_MODIFIED,
+															t if t is not None and t > self.lastModified else time.time() )
+		return self.lastModified
+
+	def _get_lastModified( self ):
+		return self.get( StandardExternalFields.LAST_MODIFIED, 0 )
+	def _set_lastModified( self, lm ):
+		BTrees.OOBTree.OOBTree.__setitem__( self, StandardExternalFields.LAST_MODIFIED, lm )
+	lastModified = property(_get_lastModified,_set_lastModified)
 
 	def _p_resolveConflict(self, oldState, savedState, newState ):
 		# Our super class will generally resolve what conflicts it
@@ -1385,7 +1405,6 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 			raise ValueError( "Item %s for key %s must be %s" % (item,key,self.contained_type) )
 		super(AbstractNamedContainerMap,self).__setitem__(key, item)
 
-from zope.minmax import _minmax as minmax
 
 class MergingCounter(minmax.AbstractValue):
 	"""
