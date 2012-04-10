@@ -28,10 +28,10 @@
 	<adapter factory=".meeting_container_storage._ClassSectionAdapter" />
 	<adapter factory=".chat_transcripts._UserTranscriptStorageAdapter"
 			 />
-	<adapter factory=".chat_transcripts.TranscriptSummary"
+	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
 			 for=".chat_transcripts._MeetingTranscriptStorage"
 			 provides=".interfaces.IExternalObject" />
-	<adapter factory=".chat_transcripts.TranscriptSummary"
+	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
 			 for=".chat_transcripts._MeetingTranscriptStorage"
 			 provides=".interfaces.IExternalObject"
 			 name="wsgi"/>
