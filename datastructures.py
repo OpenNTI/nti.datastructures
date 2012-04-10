@@ -215,13 +215,13 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 			# Broken objects mean there's been a persistence
 			# issue
 			logger.debug("Broken object found %s, %s", type(obj), obj)
-			result = 'Broken object'
+			result = { 'Class': 'BrokenObject' }
 		else:
 			# Otherwise, we probably won't be able to
 			# JSON-ify it
-			logger.debug( "Asked to externalize non-externalizable object %s, %s", type(obj), obj )
 			if not ILink.providedBy( obj ): # Special case this one FIXME
-				result = None
+				logger.debug( "Asked to externalize non-externalizable object %s, %s", type(obj), obj )
+				result = { 'Class': 'NonExternalizableObject', 'InternalType': str(type(obj)) }
 		return result
 	finally:
 		_ex_name_local.name.pop()
