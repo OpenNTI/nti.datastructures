@@ -28,7 +28,7 @@ from zope import component
 from zope.minmax import _minmax as minmax
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
-						 IExternalObject,
+						 IExternalObject, ILink,
 						 ILocation)
 from . import links
 from . import ntiids
@@ -167,7 +167,8 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 
 	"""
 
-	if isinstance( obj, six.string_types ) or isinstance( obj, numbers.Number ):
+	# Catch the primitives up here, quickly
+	if isinstance(obj, six.string_types) or isinstance(obj, (numbers.Number,bool)):
 		return obj
 
 	if name == _ex_name_marker:
@@ -203,17 +204,24 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 			if obj.__class__ == dict: result.pop( 'Class', None )
 			for key, value in obj.iteritems():
 				result[key] = recall( value )
-		elif isinstance( obj, (persistent.list.PersistentList, collections.Set, list) ):
+		elif isinstance( obj, (persistent.list.PersistentList, collections.Set, list, tuple) ):
 			result = LocatedExternalList( [recall(x) for x in obj] )
 		# PList doesn't support None values, JSON does. The closest
 		# coersion I can think of is False.
-		elif obj is None and coerceNone:
-			result = False
+		elif obj is None:
+			if coerceNone:
+				result = False
 		elif isinstance( obj, ZODB.broken.PersistentBroken ):
 			# Broken objects mean there's been a persistence
 			# issue
 			logger.debug("Broken object found %s, %s", type(obj), obj)
 			result = 'Broken object'
+		else:
+			# Otherwise, we probably won't be able to
+			# JSON-ify it
+			logger.debug( "Asked to externalize non-externalizable object %s, %s", type(obj), obj )
+			if not ILink.providedBy( obj ): # Special case this one FIXME
+				result = None
 		return result
 	finally:
 		_ex_name_local.name.pop()
