@@ -180,7 +180,7 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 	try:
 		def recall( obj ):
 			return toExternalObject( obj, coerceNone=coerceNone, name=name, registry=registry )
-
+		orig_obj = obj
 		if not IExternalObject.providedBy( obj ) and not hasattr( obj, 'toExternalObject' ):
 			adapter = registry.queryAdapter( obj, IExternalObject, default=None, name=name )
 			if not adapter and name != '':
@@ -222,8 +222,9 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 			if not ILink.providedBy( obj ): # Special case this one FIXME
 				logger.debug( "Asked to externalize non-externalizable object %s, %s", type(obj), obj )
 				result = { 'Class': 'NonExternalizableObject', 'InternalType': str(type(obj)) }
-		for decorator in registry.subscribers( (obj,), IExternalObjectDecorator ):
-			decorator.decorateExternalObject( obj, result )
+
+		for decorator in registry.subscribers( (orig_obj,), IExternalObjectDecorator ):
+			decorator.decorateExternalObject( orig_obj, result )
 		return result
 	finally:
 		_ex_name_local.name.pop()
