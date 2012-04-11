@@ -28,8 +28,8 @@ from zope import component
 from zope.minmax import _minmax as minmax
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
-						 IExternalObject, ILink,
-						 ILocation)
+						 IExternalObject, IExternalObjectDecorator,
+						 ILink,	 ILocation)
 from . import links
 from . import ntiids
 from . import mimetype
@@ -183,7 +183,7 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 
 		if not IExternalObject.providedBy( obj ) and not hasattr( obj, 'toExternalObject' ):
 			adapter = registry.queryAdapter( obj, IExternalObject, default=None, name=name )
-			if not adapter and name == '':
+			if not adapter and name != '':
 				# try for the default, but allow passing name of None to disable
 				adapter = registry.queryAdapter( obj, IExternalObject, default=None, name='' )
 			# if not adapter and name == '':
@@ -222,6 +222,8 @@ def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=comp
 			if not ILink.providedBy( obj ): # Special case this one FIXME
 				logger.debug( "Asked to externalize non-externalizable object %s, %s", type(obj), obj )
 				result = { 'Class': 'NonExternalizableObject', 'InternalType': str(type(obj)) }
+		for decorator in registry.subscribers( (obj,), IExternalObjectDecorator ):
+			decorator.decorateExternalObject( obj, result )
 		return result
 	finally:
 		_ex_name_local.name.pop()

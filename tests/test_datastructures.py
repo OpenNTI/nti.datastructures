@@ -372,5 +372,34 @@ class TestExternalizableInstanceDict(unittest.TestCase):
 		assert_that( newObj.A1, is_( 1 ) )
 		assert_that( newObj.A2, is_( "2" ) )
 
+from zope import interface, component
+from .mock_dataserver import ConfiguringTestBase
+from ..interfaces import IExternalObject, IExternalObjectDecorator
+
+
+class TestToExternalObject(ConfiguringTestBase):
+
+	def test_decorator(self):
+		class ITest(interface.Interface): pass
+		class Test(object):
+			interface.implements(ITest,IExternalObject)
+
+			def toExternalObject(self):
+				return {}
+
+		test = Test()
+
+		assert_that( toExternalObject( test ), is_( {} ) )
+
+		class Decorator(object):
+			interface.implements(IExternalObjectDecorator)
+			def __init__( self, o ): pass
+			def decorateExternalObject( self, obj, result ):
+				result['test'] = obj
+
+		component.provideSubscriptionAdapter( Decorator, adapts=(ITest,) )
+
+		assert_that( toExternalObject( test ), is_( {'test': test } ) )
+
 if __name__ == '__main__':
 	unittest.main()
