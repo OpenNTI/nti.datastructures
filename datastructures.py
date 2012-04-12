@@ -1298,8 +1298,10 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 			return None
 		container = self.containers.get( contained.containerId, None )
 		if container is None:
-			logger.debug( "Unable to delete object we have no container for: %s (%s) (%s)",
-						  contained.containerId, list(self.containers.keys()), contained )
+			logger.debug( "Unable to delete object we have no container for: %s (%s) (%s) (%s %r %r)",
+						  contained.containerId, list(self.containers.keys()),
+						  self._p_state, self._p_jar, self._p_oid,
+						  contained )
 			return None
 
 		wrapped = self._v_wrap( contained ) # outside the catch
