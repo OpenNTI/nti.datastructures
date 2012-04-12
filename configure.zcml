@@ -66,6 +66,8 @@
 				for=".interfaces.IUser"
 				provides=".interfaces.IExternalObjectDecorator" />
 
+	<adapter factory=".activitystream_change._ChangeExternalObject" />
+
 
 	<!-- Groups and ACLs -->
 	<!-- First, make something that can store group names on the user -->
