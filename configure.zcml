@@ -62,9 +62,6 @@
 	<adapter factory=".users_external._FriendsListExternalObject" />
 	<adapter factory=".users_external._UserExternalObject" />
 
-	<subscriber factory=".users_external._UserPresenceExternalDecoratorFactory"
-				for=".interfaces.IUser"
-				provides=".interfaces.IExternalObjectDecorator" />
 
 	<adapter factory=".activitystream_change._ChangeExternalObject" />
 
