@@ -43,7 +43,7 @@
 	<!-- Socket event handling -->
 	<subscriber provides=".interfaces.ISocketEventHandler"
 				for=".interfaces.ISocketSession"
-				factory=".chat.ChatHandlerFactory" />
+				factory="nti.chatserver._handler.ChatHandlerFactory" />
 
 
 	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
