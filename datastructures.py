@@ -1296,6 +1296,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		if contained is None or contained.containerId is None:
 			logger.debug( "Unable to delete object equal to None or with no containerId: %s", contained )
 			return None
+		if self._p_jar:
+			self._p_jar.readCurrent( self.containers ) # Make sure we're current, raise ConflictError on commit otherwise
 		container = self.containers.get( contained.containerId, None )
 		if container is None:
 			logger.debug( "Unable to delete object we have no container for: %s (%s) (%s) (%s %r %r)",
