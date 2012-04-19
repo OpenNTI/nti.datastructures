@@ -295,16 +295,11 @@ persistent.wref.WeakRef.toExternalOID = _weakRef_toExternalOID
 
 class _SafeMaximum(minmax.Maximum):
 	# FIXME: Some how, in some circumstance,
-	# getstate is finding an object with no value.
-	# don't ask me how. watch for that
+	# `__getstate__` is finding an object with no `value`.
+	# don't ask me how. We fix that by making it a class attribute.
 	# TODO: Could this lead to corruption?
-	def __getstate__(self):
-		try:
-			return minmax.Maximum.__getstate__( self )
-		except AttributeError:
-			logger.debug( "Problem getting state for object %s/%r/%s",
-						  self, self._p_oid, self._p_jar )
-			return 0
+	value = 0
+
 
 class ModDateTrackingObject(object):
 	""" Maintains an lastModified attribute containing a time.time()
@@ -1306,6 +1301,9 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 						  contained )
 			return None
 
+		if self._p_jar:
+			self._p_jar.readCurrent( container )
+
 		wrapped = self._v_wrap( contained ) # outside the catch
 		try:
 			contained = self._v_unwrap( self._v_removeFromContainer( container, wrapped ) )
@@ -1427,7 +1425,7 @@ class MergingCounter(minmax.AbstractValue):
 	merging the numeric value of the difference in magnitude of changes.
 	Intented to be used for increasing counters.
 	"""
-
+	value = 0
 	def _p_resolveConflict( self, oldState, savedState, newState ):
 		saveDiff = savedState - oldState
 		newDiff = newState - oldState
