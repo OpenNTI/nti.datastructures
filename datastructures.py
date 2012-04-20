@@ -117,6 +117,8 @@ class ModDateTrackingObject(object):
 			except AttributeError:
 				return 0
 	def _set_lastModified(self, lm):
+		# NOTE: Changing this value through the property
+		# will result in false conflicts. Call the setter instead.
 		old_lm = getattr( self, '_lastModified', None )
 		if not hasattr( old_lm, 'value' ):
 			self._lastModified = _SafeMaximum( value=lm )
@@ -125,13 +127,13 @@ class ModDateTrackingObject(object):
 	lastModified = property( _get_lastModified, _set_lastModified )
 
 	def updateLastMod(self, t=None ):
-		self.lastModified = t if t is not None and t > self.lastModified else time.time()
+		self._set_lastModified( t if t is not None and t > self.lastModified else time.time() )
 		return self.lastModified
 
 	def updateLastModIfGreater( self, t ):
 		"Only if the given time is (not None and) greater than this object's is this object's time changed."
 		if t is not None and t > self.lastModified:
-			self.lastModified = t
+			self._set_lastModified( t )
 		return self.lastModified
 
 def _syntheticKeys( ):
