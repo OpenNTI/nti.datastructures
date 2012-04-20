@@ -1,9 +1,9 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 """
 Datatypes and datatype handling.
 $Revision$
 """
-# TODO: Split this apart, move externalization to its own module.
+
 
 import logging
 logger = logging.getLogger( __name__ )
@@ -17,42 +17,24 @@ import persistent
 import BTrees.OOBTree
 import ZODB
 
-import plistlib
-import anyjson as json
-
 import six
-import numbers
+
 
 from zope import interface
 from zope import component
-from zope.minmax import _minmax as minmax
 from zope.deprecation import deprecated
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
-						 IExternalObject, IExternalObjectDecorator,
-						 ILink,	 ILocation)
+						 						 ILink,	 ILocation)
 from . import links
-from . import ntiids
+
 from . import mimetype
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import authorization_acl as nacl
 
 import nti.externalization.interfaces as ext_interfaces
 
-__all__ = ['toExternalObject', 'ModDateTrackingObject', 'ExternalizableDictionaryMixin',
-		   'CreatedModDateTrackingObject', 'ModDateTrackingMappingMixin', 'ModDateTrackingOOBTree',
-		   'ModDateTrackingPersistentMapping', 'PersistentExternalizableDictionary', 'CreatedModDateTrackingPersistentMapping',
-		   'PersistentExternalizableList', 'IDItemMixin', 'PersistentCreatedModDateTrackingObject', 'LocatedExternalDict',
-		   'getPersistentState', 'setPersistentStateChanged', 'IExternalObject', 'isSyntheticKey', 'AbstractNamedContainerMap',
-		   'ContainedMixin', 'toExternalOID', 'fromExternalOID',  'stripNoneFromExternal', 'stripSyntheticKeysFromExternalDictionary',
-		   'ContainedStorage', 'LastModifiedCopyingUserList', 'ExternalizableInstanceDict',
-		   'to_external_representation', 'to_json_representation', 'EXT_FORMAT_JSON', 'EXT_FORMAT_PLIST',
-		   'StandardExternalFields', 'StandardInternalFields', 'toExternalDictionary',
-		   'to_external_ntiid_oid', 'MergingCounter' ]
-
-from zope.container._zope_container_contained import isProxy as _isContainedProxy
-from zope.container._zope_container_contained import getProxiedObject as _getContainedProxiedObject
-
+# Re-exported
 from nti.externalization.oids import fromExternalOID
 from nti.externalization.oids import to_external_ntiid_oid
 from nti.externalization.oids import toExternalOID
@@ -99,26 +81,9 @@ if False:
 
 from nti.externalization.externalization import EXT_FORMAT_JSON, EXT_FORMAT_PLIST
 
-# It turns out that the name we use for externalization (and really the registry, too)
-# we must keep thread-local. We call into objects without any context,
-# and they call back into us, and otherwise we would lose
-# the name that was established at the top level.
-_ex_name_marker = object()
-import gevent.local
-class _ex_name_local_c(gevent.local.local):
-	def __init__( self ):
-		super(_ex_name_local_c,self).__init__()
-		self.name = [_ex_name_marker]
-_ex_name_local = _ex_name_local_c
-_ex_name_local.name = [_ex_name_marker]
 
+from nti.zodb.minmax import NumericMaximum as _SafeMaximum
 
-class _SafeMaximum(minmax.Maximum):
-	# FIXME: Some how, in some circumstance,
-	# `__getstate__` is finding an object with no `value`.
-	# don't ask me how. We fix that by making it a class attribute.
-	# TODO: Could this lead to corruption?
-	value = 0
 
 
 class ModDateTrackingObject(object):
@@ -1032,16 +997,5 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 			raise ValueError( "Item %s for key %s must be %s" % (item,key,self.contained_type) )
 		super(AbstractNamedContainerMap,self).__setitem__(key, item)
 
-
-class MergingCounter(minmax.AbstractValue):
-	"""
-	A :module:`zope.minmax` item that resolves conflicts by
-	merging the numeric value of the difference in magnitude of changes.
-	Intented to be used for increasing counters.
-	"""
-	value = 0
-	def _p_resolveConflict( self, oldState, savedState, newState ):
-		saveDiff = savedState - oldState
-		newDiff = newState - oldState
-		savedState = oldState + saveDiff + newDiff
-		return savedState
+from nti.zodb.minmax import MergingCounter
+deprecated( "MergingCounter", "Prefer nti.zodb.minmax" )
