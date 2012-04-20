@@ -20,6 +20,7 @@
 
 	<utility component="._Dataserver._trivial_db_transaction_cm" />
 	<utility component="._Dataserver.run_job_in_site" />
+	<adapter factory="._Dataserver.ExternalRefResolverFactory" />
 
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
