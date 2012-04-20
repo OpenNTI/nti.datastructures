@@ -26,6 +26,7 @@ import numbers
 from zope import interface
 from zope import component
 from zope.minmax import _minmax as minmax
+from zope.deprecation import deprecated
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
 						 IExternalObject, IExternalObjectDecorator,
@@ -35,6 +36,8 @@ from . import ntiids
 from . import mimetype
 from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import authorization_acl as nacl
+
+import nti.externalization.interfaces as ext_interfaces
 
 __all__ = ['toExternalObject', 'ModDateTrackingObject', 'ExternalizableDictionaryMixin',
 		   'CreatedModDateTrackingObject', 'ModDateTrackingMappingMixin', 'ModDateTrackingOOBTree',
@@ -50,98 +53,51 @@ __all__ = ['toExternalObject', 'ModDateTrackingObject', 'ExternalizableDictionar
 from zope.container._zope_container_contained import isProxy as _isContainedProxy
 from zope.container._zope_container_contained import getProxiedObject as _getContainedProxiedObject
 
-def getPersistentState( obj ):
-	""" For a Persistent object, returns one of the
-	constants from the persistent module for its state:
-	CHANGED and UPTODATE being the most useful. If the object
-	is not Persistent and doesn't implement a 'getPersistentState' method,
-	this method will be pessimistic and assume the object has
-	been CHANGED."""
-	if hasattr( obj, '_p_changed' ):
-		if getattr(obj, '_p_changed', False ):
-			# Trust the changed value ahead of the state value,
-			# because it is settable from python but the state
-			# is more implicit.
-			return persistent.CHANGED
-		if getattr( obj, '_p_state', -1 ) == persistent.UPTODATE and getattr( obj, '_p_jar', -1 ) is None:
-			# In keeping with the pessimistic theme, if it claims to be uptodate, but has never
-			# been saved, we consider that the same as changed
-			return persistent.CHANGED
-		# We supply container classes that wrap objects (that are not IContained/ILocation)
-		# in ContainerProxy classes. The proxy doesn't proxy _p_changed, which
-		# leads to weird behaviour for things that want to notice changes (users.User.endUpdates)
-		# so we need to reflect those changes to the actual object ourself
-		# TODO: Such places should be using events
-		if _isContainedProxy(obj):
-			return getPersistentState( _getContainedProxiedObject( obj ) )
-		return persistent.UPTODATE
-	if hasattr(obj, '_p_state'):
-		return getattr(obj, '_p_state' )
-	if hasattr( obj, 'getPersistentState' ):
-		return obj.getPersistentState()
-	return persistent.CHANGED
+from nti.externalization.oids import fromExternalOID
+from nti.externalization.oids import to_external_ntiid_oid
+from nti.externalization.oids import toExternalOID
+from nti.externalization.externalization import to_json_representation
+from nti.externalization.externalization import toExternalDictionary
+from nti.externalization.externalization import isSyntheticKey
+from nti.externalization.externalization import to_external_representation
+from nti.externalization.externalization import toExternalObject
+from nti.externalization.externalization import stripSyntheticKeysFromExternalDictionary
+from nti.externalization.externalization import DefaultNonExternalizableReplacer
+from nti.externalization.externalization import stripNoneFromExternal
+from nti.externalization.datastructures import LocatedExternalList
+from nti.externalization.datastructures import ExternalizableDictionaryMixin
+from nti.externalization.datastructures import LocatedExternalDict
+from nti.externalization.datastructures import ExternalizableInstanceDict
+from nti.externalization.datastructures import isSyntheticKey
+from nti.externalization.persistence import getPersistentState
+from nti.externalization.persistence import PersistentExternalizableWeakList
+from nti.externalization.persistence import PersistentExternalizableList
 
-def setPersistentStateChanged( obj ):
-	""" Explicitly marks a persistent object as changed. """
-	if hasattr(obj, '_p_changed' ):
-		setattr(obj, '_p_changed', True )
+if False:
+	deprecated( "fromExternalOID", "Prefer nti.externalization.oids.fromExternalOID" )
+	deprecated( "to_external_ntiid_oid", "Prefer nti.externalization.oids.to_external_ntiid_oid" )
+	deprecated( "toExternalOID", "Prefer nti.externalization.oids.toExternalOID" )
+	deprecated( "to_json_representation", "Prefer nti.externalization.externalization.to_json_representation" )
+	deprecated( "toExternalDictionary", "Prefer nti.externalization.externalization.toExternalDictionary" )
+	deprecated( "isSyntheticKey", "Prefer nti.externalization.externalization.isSyntheticKey" )
+	deprecated( "to_external_representation", "Prefer nti.externalization.externalization.to_external_representation" )
+	deprecated( "toExternalObject", "Prefer nti.externalization.externalization.toExternalObject" )
+	deprecated( "stripSyntheticKeysFromExternalDictionary", "Prefer nti.externalization.externalization.stripSyntheticKeysFromExternalDictionary" )
+	deprecated( "DefaultNonExternalizableReplacer", "Prefer nti.externalization.externalization.DefaultNonExternalizableReplacer" )
+	deprecated( "stripNoneFromExternal", "Prefer nti.externalization.externalization.stripNoneFromExternal" )
+	deprecated( "LocatedExternalList", "Prefer nti.externalization.datastructures.LocatedExternalList" )
+	deprecated( "ExternalizableDictionaryMixin", "Prefer nti.externalization.datastructures.ExternalizableDictionaryMixin" )
+	deprecated( "LocatedExternalDict", "Prefer nti.externalization.datastructures.LocatedExternalDict" )
+	deprecated( "ExternalizableInstanceDict", "Prefer nti.externalization.datastructures.ExternalizableInstanceDict" )
+	deprecated( "isSyntheticKey", "Prefer nti.externalization.datastructures.isSyntheticKey" )
+	deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.persistence.PersistentExternalizableDictionary" )
+	deprecated( "getPersistentState", "Prefer nti.externalization.persistence.getPersistentState" )
+	deprecated( "setPersistentStateChanged", "Prefer nti.externalization.persistence.setPersistentStateChanged" )
+	deprecated( "PersistentExternalizableWeakList", "Prefer nti.externalization.persistence.PersistentExternalizableWeakList" )
+	deprecated( "PersistentExternalizableList", "Prefer nti.externalization.persistence.PersistentExternalizableList" )
 
-def toExternalOID( self, default=None ):
-	""" For a persistent object, returns its persistent OID in a pasreable
-	external format. If the object has not been saved, returns the default. """
-	oid = default
-	if hasattr( self, 'toExternalOID' ):
-		oid = self.toExternalOID( )
-	elif hasattr(self, '_p_oid') and getattr(self, '_p_oid'):
-		# The object ID is defined to be 8 charecters long. It gets
-		# padded with null chars to get to that length; we strip
-		# those out. Finally, it probably has chars that
-		# aren't legal it UTF or ASCII, so we go to hex and prepend
-		# a flag, '0x'
-		oid = getattr(self, '_p_oid').lstrip('\x00')
-		oid = '0x' + oid.encode('hex')
-		if hasattr(self, '_p_jar') and getattr(self, '_p_jar'):
-			db_name = self._p_jar.db().database_name
-			oid = oid + ':' + db_name.encode( 'hex' )
-	return oid
 
-def fromExternalOID( ext_oid ):
-	"""
-	:return: A tuple of OID, database name. Name may be empty.
-	:param string ext_oid: As produced by :func:`toExternalOID`.
-	"""
-	oid_string, name_s = ext_oid.split( ':' ) if ':' in ext_oid else (ext_oid, "")
-	# Translate the external format if needed
-	if oid_string.startswith( '0x' ):
-		oid_string = oid_string[2:].decode( 'hex' )
-		name_s = name_s.decode( 'hex' )
-	# Recall that oids are padded to 8 with \x00
-	oid_string = oid_string.rjust( 8, '\x00' )
-	return oid_string, name_s
-
-_ext_ntiid_oid = object()
-def to_external_ntiid_oid( contained, default_oid=_ext_ntiid_oid ):
-	"""
-	:return: An NTIID string utilizing the object's creator and persistent
-		id.
-	:param default_oid: The default value for the externalization of the OID.
-		If this is None, and no external OID can be found (using :func:`toExternalOID`),
-		then this function will return None.
-	"""
-	# We really want the external OID, but for those weird time we may not be saved we'll
-	# allow the ID of the object, unless we are explicitly overridden
-	if _isContainedProxy(contained):
-		 contained = _getContainedProxiedObject( contained )
-	oid = toExternalOID( contained, default=(default_oid if default_oid is not _ext_ntiid_oid else str(id(contained))) )
-	if not oid:
-		return None
-
-	creator = getattr( contained, 'creator', nti_interfaces.SYSTEM_USER_NAME )
-	return ntiids.make_ntiid( provider=(creator
-										if isinstance( creator, six.string_types )
-										else getattr( creator, 'username', nti_interfaces.SYSTEM_USER_NAME )),
-								specific=oid,
-								nttype=ntiids.TYPE_OID )
+from nti.externalization.externalization import EXT_FORMAT_JSON, EXT_FORMAT_PLIST
 
 # It turns out that the name we use for externalization (and really the registry, too)
 # we must keep thread-local. We call into objects without any context,
@@ -156,142 +112,6 @@ class _ex_name_local_c(gevent.local.local):
 _ex_name_local = _ex_name_local_c
 _ex_name_local.name = [_ex_name_marker]
 
-def toExternalObject( obj, coerceNone=False, name=_ex_name_marker, registry=component ):
-	""" Translates the object into a form suitable for
-	external distribution, through some data formatting process.
-
-	:param string name: The name of the adapter to :class:IExternalObject to look
-		for. Defaults to the empty string (the default adapter). If you provide
-		a name, and an adapter is not found, we will still look for the default name
-		(unless the name you supply is None).
-
-	"""
-
-	# Catch the primitives up here, quickly
-	if isinstance(obj, six.string_types) or isinstance(obj, (numbers.Number,bool)):
-		return obj
-
-	if name == _ex_name_marker:
-		name = _ex_name_local.name[-1]
-	if name == _ex_name_marker:
-		name = ''
-	_ex_name_local.name.append( name )
-
-	try:
-		def recall( obj ):
-			return toExternalObject( obj, coerceNone=coerceNone, name=name, registry=registry )
-		orig_obj = obj
-		if not IExternalObject.providedBy( obj ) and not hasattr( obj, 'toExternalObject' ):
-			adapter = registry.queryAdapter( obj, IExternalObject, default=None, name=name )
-			if not adapter and name != '':
-				# try for the default, but allow passing name of None to disable
-				adapter = registry.queryAdapter( obj, IExternalObject, default=None, name='' )
-			# if not adapter and name == '':
-			# 	# try for the default, but allow passing name of None to disable
-			# 	adapter = registry.queryAdapter( obj, IExternalObject, default=None, name='wsgi' )
-			if adapter:
-				obj = adapter
-
-		result = obj
-		if hasattr( obj, "toExternalObject" ):
-			result = obj.toExternalObject()
-		elif hasattr( obj, "toExternalDictionary" ):
-			result = obj.toExternalDictionary()
-		elif hasattr( obj, "toExternalList" ):
-			result = obj.toExternalList()
-		elif isinstance(obj, (persistent.mapping.PersistentMapping,BTrees.OOBTree.OOBTree,collections.Mapping)):
-			result = toExternalDictionary( obj, name=name, registry=registry )
-			if obj.__class__ == dict: result.pop( 'Class', None )
-			for key, value in obj.iteritems():
-				result[key] = recall( value )
-		elif isinstance( obj, (persistent.list.PersistentList, collections.Set, list, tuple) ):
-			result = LocatedExternalList( [recall(x) for x in obj] )
-		# PList doesn't support None values, JSON does. The closest
-		# coersion I can think of is False.
-		elif obj is None:
-			if coerceNone:
-				result = False
-		elif isinstance( obj, ZODB.broken.PersistentBroken ):
-			# Broken objects mean there's been a persistence
-			# issue
-			logger.debug("Broken object found %s, %s", type(obj), obj)
-			result = { 'Class': 'BrokenObject' }
-		else:
-			# Otherwise, we probably won't be able to
-			# JSON-ify it
-			if not ILink.providedBy( obj ): # Special case this one FIXME
-				logger.debug( "Asked to externalize non-externalizable object %s, %s", type(obj), obj )
-				result = { 'Class': 'NonExternalizableObject', 'InternalType': str(type(obj)) }
-
-		for decorator in registry.subscribers( (orig_obj,), IExternalObjectDecorator ):
-			decorator.decorateExternalObject( orig_obj, result )
-		return result
-	finally:
-		_ex_name_local.name.pop()
-
-
-def stripNoneFromExternal( obj ):
-	""" Given an already externalized object, strips None values. """
-	if isinstance( obj, list ) or isinstance(obj, tuple):
-		obj = [stripNoneFromExternal(x) for x in obj if x is not None]
-	elif isinstance( obj, collections.Mapping ):
-		obj = {k:stripNoneFromExternal(v)
-			   for k,v in obj.iteritems()
-			   if (v is not None and k is not None)}
-	return obj
-
-def stripSyntheticKeysFromExternalDictionary( external ):
-	""" Given a mutable dictionary, removes all the external keys
-	that might have been added by toExternalDictionary and echoed back. """
-	for key in _syntheticKeys():
-		external.pop( key, None )
-	return external
-
-EXT_FORMAT_JSON = 'json'
-EXT_FORMAT_PLIST = 'plist'
-
-def to_external_representation( obj, ext_format=EXT_FORMAT_PLIST, name=_ex_name_marker, registry=component ):
-	"""
-	Transforms (and returns) the `obj` into its external (string) representation.
-
-	:param ext_format: One of :const:EXT_FORMAT_JSON or :const:EXT_FORMAT_PLIST.
-	"""
-	# It would seem nice to be able to do this in one step during
-	# the externalization process itself, but we would wind up traversing
-	# parts of the datastructure more than necessary. Here we traverse
-	# the whole thing exactly twice.
-	ext = toExternalObject( obj, name=name, registry=registry )
-
-	if ext_format == EXT_FORMAT_PLIST:
-		ext = stripNoneFromExternal( ext )
-		try:
-			ext = plistlib.writePlistToString( ext )
-		except TypeError:
-			logger.exception( "Failed to externalize %s", ext )
-			raise
-	else:
-		ext = json.dumps( ext )
-	return ext
-
-def to_json_representation( obj ):
-	""" A convenience function that calls :func:`to_external_representation` with :data:`EXT_FORMAT_JSON`."""
-	return to_external_representation( obj, EXT_FORMAT_JSON )
-
-def _weakRef_toExternalObject(self):
-	val = self()
-	if val is None:
-		return None
-	return toExternalObject( val )
-
-persistent.wref.WeakRef.toExternalObject = _weakRef_toExternalObject
-
-def _weakRef_toExternalOID(self):
-	val = self()
-	if val is None:
-		return None
-	return toExternalOID( val )
-
-persistent.wref.WeakRef.toExternalOID = _weakRef_toExternalOID
 
 class _SafeMaximum(minmax.Maximum):
 	# FIXME: Some how, in some circumstance,
@@ -359,130 +179,8 @@ def _isMagicKey( key ):
 
 isSyntheticKey = _isMagicKey
 
-class StandardExternalFields(object):
+from nti.externalization.interfaces import StandardInternalFields, StandardExternalFields
 
-	OID   = 'OID'
-	ID    = 'ID'
-	NTIID = 'NTIID'
-	LAST_MODIFIED = 'Last Modified'
-	CREATED_TIME = 'CreatedTime'
-	CREATOR = 'Creator'
-	CONTAINER_ID = 'ContainerId'
-	CLASS = 'Class'
-	MIMETYPE = 'MimeType'
-	LINKS = 'Links'
-	HREF = 'href'
-
-StandardExternalFields.ALL = [ v for k,v in StandardExternalFields.__dict__.iteritems() if not k.startswith( '_' ) ]
-
-
-class StandardInternalFields(object):
-	ID = 'id'
-	NTIID = 'ntiid'
-
-	CREATOR = 'creator'
-	LAST_MODIFIED = 'lastModified'
-	LAST_MODIFIEDU = 'LastModified'
-	CREATED_TIME = 'createdTime'
-	CONTAINER_ID = 'containerId'
-
-class LocatedExternalDict(dict):
-	"""
-	A dictionary that implements ILocation. Returned
-	by toExternalDictionary.
-	"""
-	interface.implements( ILocation )
-	__name__ = ''
-	__parent__ = None
-	__acl__ = ()
-
-class LocatedExternalList(list):
-	"""
-	A list that implements ILocation. Returned
-	by toExternalObject.
-	"""
-	interface.implements( ILocation )
-	__name__ = ''
-	__parent__ = None
-	__acl__ = ()
-
-def toExternalDictionary( self, mergeFrom=None, name=_ex_name_marker, registry=component):
-	""" Returns a dictionary of the object's contents. The super class's
-	implementation MUST be called and your object's values added to it.
-	This impl takes care of adding the standard attributes including
-	OID (from self._p_oid) and ID (from self.id if defined) and
-	Creator (from self.creator).
-
-	For convenience, if mergeFrom is not None, then those values will
-	be added to the dictionary created by this method. This allows a pattern like:
-	def toDictionary(self): return super(MyClass,self).toDictionary( {'key': self.val } )
-	The keys and values in mergeFrom should already be external.
-	"""
-	result = LocatedExternalDict()
-	result.__acl__ = nacl.ACL( self )
-	if mergeFrom:
-		result.update( mergeFrom )
-
-	def _ordered_pick( ext_name, *fields ):
-		for x in fields:
-			if isinstance( x, basestring) and getattr( self, x, ''):
-				result[ext_name] = getattr( self, x )
-				if callable( fields[-1] ):
-					result[ext_name] = fields[-1]( result[ext_name] )
-				break
-
-	_ordered_pick( StandardExternalFields.ID, StandardInternalFields.ID, StandardExternalFields.ID )
-	# As we transition over to structured IDs that contain OIDs, we'll try to use that
-	# for both the ID and OID portions
-	if ntiids.is_ntiid_of_type( result.get( StandardExternalFields.ID ), ntiids.TYPE_OID ):
-		result[StandardExternalFields.OID] = result[StandardExternalFields.ID]
-	else:
-		oid = to_external_ntiid_oid( self, default_oid=None ) #toExternalOID( self )
-		if oid:
-			result[StandardExternalFields.OID] = oid
-
-	_ordered_pick( StandardExternalFields.CREATOR, StandardInternalFields.CREATOR, StandardExternalFields.CREATOR, str )
-	_ordered_pick( StandardExternalFields.LAST_MODIFIED, StandardInternalFields.LAST_MODIFIED, StandardInternalFields.LAST_MODIFIEDU )
-	_ordered_pick( StandardExternalFields.CREATED_TIME, StandardInternalFields.CREATED_TIME )
-
-
-	if hasattr( self, '__external_class_name__' ):
-		result[StandardExternalFields.CLASS] = getattr( self, '__external_class_name__' )
-	elif self.__class__.__module__ != ExternalizableDictionaryMixin.__module__ \
-		   and not self.__class__.__name__.startswith( '_' ):
-		result[StandardExternalFields.CLASS] = self.__class__.__name__
-
-	_ordered_pick( StandardExternalFields.CONTAINER_ID, StandardInternalFields.CONTAINER_ID )
-	try:
-		_ordered_pick( StandardExternalFields.NTIID, StandardInternalFields.NTIID, StandardExternalFields.NTIID )
-		# During the transition, if there is not an NTIID, but we can find one as the ID or OID,
-		# provide that
-		if StandardExternalFields.NTIID not in result:
-			for field in (StandardExternalFields.ID,StandardExternalFields.OID):
-				if ntiids.is_valid_ntiid_string( result.get( field ) ):
-					result[StandardExternalFields.NTIID] = result[field]
-					break
-	except ntiids.InvalidNTIIDError:
-		logger.exception( "Failed to get NTIID for object %s", type(self) ) # printing self probably wants to externalize
-
-	if StandardExternalFields.CLASS in result:
-		mime_type = mimetype.nti_mimetype_from_object( self, use_class=False )
-		if mime_type:
-			result[StandardExternalFields.MIMETYPE] = mime_type
-
-	# Links.
-	# TODO: This needs to be all generalized. Howso?
-	_links = find_links(self)
-	_links = [toExternalObject(l,name=name,registry=registry) for l in _links if l]
-	_links = [l for l in _links if l]
-	if _links:
-		for link in _links:
-			interface.alsoProvides( link, ILocation )
-			link.__name__ = ''
-			link.__parent__ = self
-		result[StandardExternalFields.LINKS] = _links
-
-	return result
 
 def find_links( self ):
 	"""
@@ -499,81 +197,58 @@ def find_links( self ):
 	return _links
 
 
-class ExternalizableDictionaryMixin(object):
-	""" Implements a toExternalDictionary method as a base for subclasses. """
+class LinkDecorator(object):
+	interface.implements(ext_interfaces.IExternalMappingDecorator)
+	component.adapts(object)
 
-	def __init__(self, *args):
-		super(ExternalizableDictionaryMixin,self).__init__(*args)
+	def __init__( self, o ):
+		pass
 
-	def toExternalDictionary( self, mergeFrom=None):
-		return toExternalDictionary( self, mergeFrom=mergeFrom )
+	def decorateExternalMapping( self, orig, result ):
+		_links = find_links(orig)
+		_links = [toExternalObject(l) for l in _links if l]
+		_links = [l for l in _links if l]
+		if _links:
+			for link in _links:
+				interface.alsoProvides( link, ILocation )
+				link.__name__ = ''
+				link.__parent__ = self
+			result[StandardExternalFields.LINKS] = _links
 
-	def stripSyntheticKeysFromExternalDictionary( self, external ):
-		""" Given a mutable dictionary, removes all the external keys
-		that might have been added by toExternalDictionary and echoed back. """
-		for k in _syntheticKeys():
-			external.pop( k, None )
-		return external
+class ACLDecorator(object):
+	interface.implements(ext_interfaces.IExternalMappingDecorator)
+	component.adapts(object)
 
-class ExternalizableInstanceDict(ExternalizableDictionaryMixin):
-	"""Externalizes to a dictionary containing the members of __dict__ that do not start with an underscore."""
-	interface.implements(IExternalObject)
-	# TODO: there should be some better way to customize this if desired (an explicit list)
-	# TODO: Play well with __slots__
-	# TODO: This won't evolve well. Need something more sophisticated,
-	# probably a meta class.
+	def __init__( self, o ):
+		pass
 
-	# Avoid things super handles
-	_excluded_out_ivars_ = {StandardInternalFields.ID, StandardExternalFields.ID, StandardInternalFields.CREATOR,
-							StandardExternalFields.CREATOR, StandardInternalFields.CONTAINER_ID,
-							'lastModified', StandardInternalFields.LAST_MODIFIEDU, StandardInternalFields.CREATED_TIME,
-							'links'}
-	_excluded_in_ivars_ = {StandardInternalFields.ID, StandardExternalFields.ID,
-						   StandardExternalFields.OID,
-						   StandardInternalFields.CREATOR,
-						   StandardExternalFields.CREATOR,
-						   'lastModified',
-						   StandardInternalFields.LAST_MODIFIEDU,
-						   StandardExternalFields.CLASS,
-						   StandardInternalFields.CONTAINER_ID}
-	_prefer_oid_ = False
+	def decorateExternalMapping( self, orig, result ):
+		result.__acl__ = nacl.ACL( orig )
 
-	def toExternalDictionary( self, mergeFrom=None ):
-		result = super(ExternalizableInstanceDict,self).toExternalDictionary( mergeFrom=mergeFrom )
-		for k in self.__dict__:
-			if (k not in self._excluded_out_ivars_  # specifically excluded
-				and not k.startswith( '_' )			# private
-				and not k in result					# specifically given
-				and not callable(getattr(self,k))):	# avoid functions
+class MimeTypeDecorator(object):
+	interface.implements(ext_interfaces.IExternalMappingDecorator)
+	component.adapts(object)
 
-				result[k] = toExternalObject( getattr( self, k ) )
-				if ILocation.providedBy( result[k] ):
-					result[k].__parent__ = self
-		if StandardExternalFields.ID in result and StandardExternalFields.OID in result \
-			   and self._prefer_oid_ and result[StandardExternalFields.ID] != result[StandardExternalFields.OID]:
-			result[StandardExternalFields.ID] = result[StandardExternalFields.OID]
-		return result
+	def __init__( self, o ):
+		pass
 
-	def toExternalObject( self, mergeFrom=None ):
-		return self.toExternalDictionary(mergeFrom)
+	def decorateExternalMapping( self, orig, result ):
+		if StandardExternalFields.CLASS in result and StandardExternalFields.MIMETYPE not in result:
+			mime_type = mimetype.nti_mimetype_from_object( orig, use_class=False )
+			if mime_type:
+				result[StandardExternalFields.MIMETYPE] = mime_type
 
-	def updateFromExternalObject( self, parsed, *args, **kwargs ):
-		for k in parsed:
-			if k in self.__dict__ and k not in self._excluded_in_ivars_:
-				setattr( self, k, parsed[k] )
+class LinkNonExternalizableReplacer(object):
+	"We expect higher levels to handle links, so we let them through."
+	# TODO: This probably belongs /at/ that higher level, not here
+	interface.implements(ext_interfaces.INonExternalizableReplacer)
+	component.adapts(ILink)
 
-		if StandardExternalFields.CONTAINER_ID in parsed and getattr( self, StandardInternalFields.CONTAINER_ID, parsed ) is None:
-			setattr( self, StandardInternalFields.CONTAINER_ID, parsed[StandardExternalFields.CONTAINER_ID] )
-		if StandardExternalFields.CREATOR in parsed and getattr( self, StandardExternalFields.CREATOR, parsed ) is None:
-			setattr( self, StandardExternalFields.CREATOR, parsed[StandardExternalFields.CREATOR] )
+	def __init__( self, o ):
+		pass
 
-	def __repr__( self ):
-		try:
-			return "%s().__dict__.update( %s )" % (self.__class__.__name__, self.toExternalDictionary() )
-		except ZODB.POSException.ConnectionStateError:
-			return '%s(Ghost)' % self.__class__.__name__
-		except ValueError as e: # Things like invalid NTIID
-			return '%s(%s)' % (self.__class__.__name__, e)
+	def __call__( self, link ):
+		return link
 
 
 class CreatedModDateTrackingObject(ModDateTrackingObject):
@@ -818,26 +493,6 @@ class ModDateTrackingPersistentMapping(ModDateTrackingMappingMixin, persistent.m
 
 CreatedModDateTrackingPersistentMapping = ModDateTrackingPersistentMapping
 
-class PersistentExternalizableDictionary(persistent.mapping.PersistentMapping,ExternalizableDictionaryMixin):
-
-	def __init__(self, dict=None, **kwargs ):
-		super(PersistentExternalizableDictionary, self).__init__( dict, **kwargs )
-
-	def toExternalDictionary( self, mergeFrom=None):
-		result = super(PersistentExternalizableDictionary,self).toExternalDictionary( self )
-		for key, value in self.iteritems():
-			result[key] = toExternalObject( value )
-		return result
-
-class PersistentExternalizableList(ModDateTrackingObject,persistent.list.PersistentList):
-
-	def __init__(self, initlist=None):
-		# Must use new-style super call to get right behaviour
-		super(PersistentExternalizableList,self).__init__(initlist)
-
-	def toExternalList( self ):
-		result = [toExternalObject(x) for x in self if x is not None]
-		return result
 
 class LastModifiedCopyingUserList(ModDateTrackingObject,UserList.UserList):
 	""" For building up a sequence of lists, keeps the max last modified. """
@@ -855,57 +510,29 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,UserList.UserList):
 
 from persistent.wref import WeakRef
 
-class PersistentExternalizableWeakList(PersistentExternalizableList):
+PersistentExternalizableList.__bases__ = (ModDateTrackingObject,persistent.list.PersistentList)
+_PersistentExternalizableWeakList = PersistentExternalizableWeakList
+
+class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,CreatedModDateTrackingObject):
 	"""
 	Stores :class:`persistent.Persistent` objects as weak references, invisibly to the user.
 	Any weak references added to the list will be treated the same.
 	"""
 
-	def __getitem__(self, i ):
-		return super(PersistentExternalizableWeakList,self).__getitem__( i )()
-
-	# __iter__ is implemented with __getitem__. However, __eq__ isn't, it wants
-	# to directly compare lists
-	def __eq__( self, other ):
-		# If we just compare lists, weak refs will fail badly
-		# if they're compared with non-weak refs
-		if not isinstance( other, collections.Sequence ):
-			return False
-
-		result = False
-		if len(self) == len(other):
-			result = True
-			for i in xrange(len(self)):
-				if self[i] != other[i]:
-					result = False
-					break
-		return result
-
-	def __wrap( self, obj ):
-		return obj if isinstance( obj, WeakRef ) else WeakRef( obj )
-
-
 	def remove(self,value):
-		super(PersistentExternalizableWeakList,self).remove( self.__wrap( WeakRef(value) ) )
+		super(PersistentExternalizableWeakList,self).remove( value )
 		self.updateLastMod()
 
 	def __setitem__(self, i, item):
-		super(PersistentExternalizableWeakList,self).__setitem__( i, self.__wrap( WeakRef( item ) ) )
+		super(PersistentExternalizableWeakList,self).__setitem__( i, item )
 		self.updateLastMod()
-
-	def __setslice__(self, i, j, other):
-		raise TypeError( 'Not supported' )
-
-	# Unfortunately, these are not implemented in terms of the primitives, so
-	# we need to overide each one. They can throw exceptions, so we're careful
-	# not to prematurely update lastMod
 
 	def __iadd__(self, other):
 		# We must wrap each element in a weak ref
 		# Note that the builtin list only accepts other lists,
 		# but the UserList from which we are descended accepts
 		# any iterable.
-		result = super(PersistentExternalizableWeakList,self).__iadd__([self.__wrap(WeakRef(o)) for o in other])
+		result = super(PersistentExternalizableWeakList,self).__iadd__(other)
 		self.updateLastMod()
 		return result
 
@@ -915,26 +542,18 @@ class PersistentExternalizableWeakList(PersistentExternalizableList):
 		return result
 
 	def append(self, item):
-		super(PersistentExternalizableWeakList,self).append(self.__wrap( WeakRef(item) ) )
+		super(PersistentExternalizableWeakList,self).append(item)
 		self.updateLastMod()
 
 	def insert(self, i, item):
-		super(PersistentExternalizableWeakList,self).insert( i, self.__wrap( WeakRef(item)) )
+		super(PersistentExternalizableWeakList,self).insert( i, item )
 		self.updateLastMod()
 
 	def pop(self, i=-1):
 		rtn = super(PersistentExternalizableWeakList,self).pop( i )
 		self.updateLastMod()
-		return rtn()
+		return rtn
 
-	def extend(self, other):
-		for x in other: self.append( x )
-
-	def count( self, item ):
-		return super(PersistentExternalizableWeakList,self).count( self.__wrap( WeakRef( item ) ) )
-
-	def index( self, item, *args ):
-		return super(PersistentExternalizableWeakList,self).index( self.__wrap( WeakRef( item ) ), *args )
 
 class IDItemMixin(object):
 	def __init__(self):
