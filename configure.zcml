@@ -43,12 +43,6 @@
 			 for=".chat_transcripts._MeetingTranscriptStorage"
 			 provides=".interfaces.ITranscript" />
 
-	<!-- Socket event handling -->
-	<subscriber provides=".interfaces.ISocketEventHandler"
-				for=".interfaces.ISocketSession"
-				factory="nti.chatserver._handler.ChatHandlerFactory" />
-
-
 	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
 
 	<!-- Externalization -->

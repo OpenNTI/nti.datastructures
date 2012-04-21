@@ -19,12 +19,13 @@ from nti.dataserver.datastructures import (getPersistentState, toExternalOID, fr
 										   LastModifiedCopyingUserList, PersistentExternalizableWeakList,
 										   ContainedStorage, ContainedMixin, CreatedModDateTrackingObject,
 										   to_external_representation, EXT_FORMAT_JSON, EXT_FORMAT_PLIST,
-										   PersistentExternalizableList, ExternalizableInstanceDict, MergingCounter)
+										   PersistentExternalizableList, ExternalizableInstanceDict)
 
 from nti.tests import has_attr
 import mock_dataserver
-from nti.dataserver import contenttypes, ntiids
+from nti.dataserver import contenttypes
 from nti.dataserver import interfaces as nti_interfaces
+from nti.ntiids import ntiids
 
 def test_moddatetrackingobject_oldstates():
 	mto = ModDateTrackingObject()
@@ -64,12 +65,6 @@ def test_moddatetrackingoobtree_resolveConflict():
 	# Make sure it runs w/o exception
 	# TODO: How to ensure it does the right thing? We don't know the times
 	mto._p_resolveConflict( oldstate, savedstate, newstate )
-
-def test_merging_resolveConflict():
-	merging = MergingCounter( 0 )
-
-	# Start from 0, commit 1, also try to commit one, result merges to two
-	assert_that( merging._p_resolveConflict( 0, 1, 1 ), is_( 2 ) )
 
 
 class TestCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
