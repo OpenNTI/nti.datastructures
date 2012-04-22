@@ -22,7 +22,10 @@ import six
 
 from zope import interface
 from zope import component
-from zope.deprecation import deprecated
+if False: # pragma: no cover
+	from zope.deprecation import deprecated
+else:
+	def deprecated( name, msg ): pass
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
 						 						 ILink,	 ILocation)
@@ -55,28 +58,28 @@ from nti.externalization.persistence import getPersistentState
 from nti.externalization.persistence import PersistentExternalizableWeakList
 from nti.externalization.persistence import PersistentExternalizableList
 
-if False:
-	deprecated( "fromExternalOID", "Prefer nti.externalization.oids.fromExternalOID" )
-	deprecated( "to_external_ntiid_oid", "Prefer nti.externalization.oids.to_external_ntiid_oid" )
-	deprecated( "toExternalOID", "Prefer nti.externalization.oids.toExternalOID" )
-	deprecated( "to_json_representation", "Prefer nti.externalization.externalization.to_json_representation" )
-	deprecated( "toExternalDictionary", "Prefer nti.externalization.externalization.toExternalDictionary" )
-	deprecated( "isSyntheticKey", "Prefer nti.externalization.externalization.isSyntheticKey" )
-	deprecated( "to_external_representation", "Prefer nti.externalization.externalization.to_external_representation" )
-	deprecated( "toExternalObject", "Prefer nti.externalization.externalization.toExternalObject" )
-	deprecated( "stripSyntheticKeysFromExternalDictionary", "Prefer nti.externalization.externalization.stripSyntheticKeysFromExternalDictionary" )
-	deprecated( "DefaultNonExternalizableReplacer", "Prefer nti.externalization.externalization.DefaultNonExternalizableReplacer" )
-	deprecated( "stripNoneFromExternal", "Prefer nti.externalization.externalization.stripNoneFromExternal" )
-	deprecated( "LocatedExternalList", "Prefer nti.externalization.datastructures.LocatedExternalList" )
-	deprecated( "ExternalizableDictionaryMixin", "Prefer nti.externalization.datastructures.ExternalizableDictionaryMixin" )
-	deprecated( "LocatedExternalDict", "Prefer nti.externalization.datastructures.LocatedExternalDict" )
-	deprecated( "ExternalizableInstanceDict", "Prefer nti.externalization.datastructures.ExternalizableInstanceDict" )
-	deprecated( "isSyntheticKey", "Prefer nti.externalization.datastructures.isSyntheticKey" )
-	deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.persistence.PersistentExternalizableDictionary" )
-	deprecated( "getPersistentState", "Prefer nti.externalization.persistence.getPersistentState" )
-	deprecated( "setPersistentStateChanged", "Prefer nti.externalization.persistence.setPersistentStateChanged" )
-	deprecated( "PersistentExternalizableWeakList", "Prefer nti.externalization.persistence.PersistentExternalizableWeakList" )
-	deprecated( "PersistentExternalizableList", "Prefer nti.externalization.persistence.PersistentExternalizableList" )
+
+deprecated( "fromExternalOID", "Prefer nti.externalization.oids.fromExternalOID" )
+deprecated( "to_external_ntiid_oid", "Prefer nti.externalization.oids.to_external_ntiid_oid" )
+deprecated( "toExternalOID", "Prefer nti.externalization.oids.toExternalOID" )
+deprecated( "to_json_representation", "Prefer nti.externalization.externalization.to_json_representation" )
+deprecated( "toExternalDictionary", "Prefer nti.externalization.externalization.toExternalDictionary" )
+deprecated( "isSyntheticKey", "Prefer nti.externalization.externalization.isSyntheticKey" )
+deprecated( "to_external_representation", "Prefer nti.externalization.externalization.to_external_representation" )
+deprecated( "toExternalObject", "Prefer nti.externalization.externalization.toExternalObject" )
+deprecated( "stripSyntheticKeysFromExternalDictionary", "Prefer nti.externalization.externalization.stripSyntheticKeysFromExternalDictionary" )
+deprecated( "DefaultNonExternalizableReplacer", "Prefer nti.externalization.externalization.DefaultNonExternalizableReplacer" )
+deprecated( "stripNoneFromExternal", "Prefer nti.externalization.externalization.stripNoneFromExternal" )
+deprecated( "LocatedExternalList", "Prefer nti.externalization.datastructures.LocatedExternalList" )
+deprecated( "ExternalizableDictionaryMixin", "Prefer nti.externalization.datastructures.ExternalizableDictionaryMixin" )
+deprecated( "LocatedExternalDict", "Prefer nti.externalization.datastructures.LocatedExternalDict" )
+deprecated( "ExternalizableInstanceDict", "Prefer nti.externalization.datastructures.ExternalizableInstanceDict" )
+deprecated( "isSyntheticKey", "Prefer nti.externalization.datastructures.isSyntheticKey" )
+deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.persistence.PersistentExternalizableDictionary" )
+deprecated( "getPersistentState", "Prefer nti.externalization.persistence.getPersistentState" )
+deprecated( "setPersistentStateChanged", "Prefer nti.externalization.persistence.setPersistentStateChanged" )
+deprecated( "PersistentExternalizableWeakList", "Prefer nti.externalization.persistence.PersistentExternalizableWeakList" )
+deprecated( "PersistentExternalizableList", "Prefer nti.externalization.persistence.PersistentExternalizableList" )
 
 
 from nti.externalization.externalization import EXT_FORMAT_JSON, EXT_FORMAT_PLIST

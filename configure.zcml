@@ -24,7 +24,6 @@
 
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
-	<subscriber handler=".activitystream.user_change_broadcaster" />
 
 	<!-- Chat -->
 	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
