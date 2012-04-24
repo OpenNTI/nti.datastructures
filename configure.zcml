@@ -58,7 +58,6 @@
 	<adapter factory=".users_external._FriendsListExternalObject" />
 	<adapter factory=".users_external._UserExternalObject" />
 
-
 	<adapter factory=".activitystream_change._ChangeExternalObject" />
 
 
@@ -69,6 +68,12 @@
 	<subscriber factory=".datastructures.MimeTypeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
 	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
+
+
+	<!-- Finding objects by mimetype -->
+	<adapter factory=".mimetype.ModeledContentTypeMimeFactory"
+			 provides="nti.externalization.interfaces.IMimeObjectFactory"
+			 for="dict" />
 
 
 	<!-- Groups and ACLs -->
