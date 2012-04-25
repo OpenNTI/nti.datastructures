@@ -976,6 +976,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	def iteritems(self):
 		return self.containers.iteritems()
 
+from zope.container.constraints import checkObject
+from zope.container.interfaces import InvalidItemType
 class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 	"""
 	A container that implements the basics of a :class:`INamedContainer` as
@@ -983,6 +985,12 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 
 	You must supply the `contained_type` attribute and the `container_name`
 	attribute.
+
+	You *should* define a specific interface for each type of homogeneous
+	container. This interface should use :func:`zope.container.constraints.contains`
+	to declare that it `contains` the `contained_type`. (The `contained_type` will
+	one day be deprecated.) This object will check the constraints declared
+	in the interfaces for the container and the objects.
 	"""
 
 	interface.implements( nti_interfaces.IHomogeneousTypeContainer,
@@ -998,8 +1006,11 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 	def __setitem__(self, key, item):
 		# TODO: Finish porting this all over to the constraints in zope.container.
 		# That will require specific subtypes for each contained_type (which we already have)
+		# We start the process by using checkObject to validate any preconditions
+		# that are defined
+		checkObject( self, key, item )
 		if not self.contained_type.providedBy( item ):
-			raise ValueError( "Item %s for key %s must be %s" % (item,key,self.contained_type) )
+			raise InvalidItemType( self, item, (self.contained_type,) )
 		super(AbstractNamedContainerMap,self).__setitem__(key, item)
 
 from nti.zodb.minmax import MergingCounter
