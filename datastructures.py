@@ -314,7 +314,12 @@ class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree
 		# Our super class will generally resolve what conflicts it
 		# can, or throw an exception. If it resolves things,
 		# we just want to update our last modified time---that's the thing
-		# most likely to conflict
+		# most likely to conflict.
+
+		# Note that a conflict it cannot resolve is if both savedState and newState
+		# get the addition of the same new key. (e.g., two transactions both add
+		# the same new key). Given some application knowledge, we might
+		# be able to merge the values for those keys.
 
 		# A BTree writes its state as a sequence of tuples, for each bucket.
 		# A bucket may be an OOBucket, or a tuple itself, if it is small.
