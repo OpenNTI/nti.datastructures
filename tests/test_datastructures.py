@@ -1,25 +1,25 @@
 
-from hamcrest import (assert_that, is_, has_entry, instance_of,
-					  has_key, is_in, not_none, is_not, greater_than,
-					  greater_than_or_equal_to, is_in, has_length, has_item,
-					  same_instance, only_contains)
+from hamcrest import (assert_that, is_, has_entry, instance_of )
+from hamcrest import  is_in, not_none, is_not, greater_than
+from hamcrest import greater_than_or_equal_to,  has_item
+from hamcrest import same_instance
 from hamcrest.library import has_property as has_attr
 import unittest
 
-import UserDict
+
 import collections
 
 import persistent
-import json
-import plistlib
-from nti.dataserver.datastructures import (getPersistentState, toExternalOID, fromExternalOID, toExternalObject,
-										   ModDateTrackingObject, ModDateTrackingOOBTree,
-										   ExternalizableDictionaryMixin, CaseInsensitiveModDateTrackingOOBTree,
-										   KeyPreservingCaseInsensitiveModDateTrackingOOBTree,
-										   LastModifiedCopyingUserList, PersistentExternalizableWeakList,
-										   ContainedStorage, ContainedMixin, CreatedModDateTrackingObject,
-										   to_external_representation, EXT_FORMAT_JSON, EXT_FORMAT_PLIST,
-										   PersistentExternalizableList, ExternalizableInstanceDict)
+
+from nti.dataserver.datastructures import ModDateTrackingObject, ModDateTrackingOOBTree
+from nti.dataserver.datastructures import CaseInsensitiveModDateTrackingOOBTree
+from nti.dataserver.datastructures import KeyPreservingCaseInsensitiveModDateTrackingOOBTree
+from nti.dataserver.datastructures import LastModifiedCopyingUserList
+from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, CreatedModDateTrackingObject
+
+from nti.externalization.externalization import toExternalObject
+from nti.externalization.oids import toExternalOID
+
 
 from nti.tests import has_attr
 import mock_dataserver
@@ -138,7 +138,7 @@ class TestLastModifiedCopyingUserList(unittest.TestCase):
 		l += LastModifiedCopyingUserList([1,2,3])
 		assert_that( l.lastModified, is_( 0 ) )
 		assert_that( l, is_([1,2,3]) )
-
+from nti.externalization.persistence import PersistentExternalizableWeakList, PersistentExternalizableList
 class TestPersistentExternalizableWeakList(unittest.TestCase):
 
 	def test_plus_extend( self ):
@@ -267,7 +267,7 @@ does_not = is_not
 
 from zope import interface, component
 from .mock_dataserver import ConfiguringTestBase
-from ..interfaces import IExternalObject, IExternalObjectDecorator
+from nti.externalization.interfaces import IExternalObject, IExternalObjectDecorator
 
 
 class TestToExternalObject(ConfiguringTestBase):
