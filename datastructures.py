@@ -148,6 +148,8 @@ def _isMagicKey( key ):
 isSyntheticKey = _isMagicKey
 
 from nti.externalization.interfaces import StandardInternalFields, StandardExternalFields
+deprecated( "StandardExternalFields", "Prefer nti.externalization.interfaces" )
+deprecated( "StandardInternalFields", "Prefer nti.externalization.interfaces" )
 
 
 def find_links( self ):
