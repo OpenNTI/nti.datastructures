@@ -31,8 +31,6 @@ from . import links
 
 from . import mimetype
 from nti.dataserver import interfaces as nti_interfaces
-from nti.dataserver import authorization_acl as nacl
-
 import nti.externalization.interfaces as ext_interfaces
 
 # Re-exported
@@ -184,16 +182,6 @@ class LinkDecorator(object):
 				link.__name__ = ''
 				link.__parent__ = self
 			result[StandardExternalFields.LINKS] = _links
-
-class ACLDecorator(object):
-	interface.implements(ext_interfaces.IExternalMappingDecorator)
-	component.adapts(object)
-
-	def __init__( self, o ):
-		pass
-
-	def decorateExternalMapping( self, orig, result ):
-		result.__acl__ = nacl.ACL( orig )
 
 class MimeTypeDecorator(object):
 	interface.implements(ext_interfaces.IExternalMappingDecorator)

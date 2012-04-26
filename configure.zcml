@@ -63,7 +63,7 @@
 
 	<subscriber factory=".datastructures.LinkDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
-	<subscriber factory=".datastructures.ACLDecorator"
+	<subscriber factory=".authorization_acl.ACLDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
 	<subscriber factory=".datastructures.MimeTypeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
