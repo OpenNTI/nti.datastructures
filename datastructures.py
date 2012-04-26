@@ -22,10 +22,8 @@ import six
 
 from zope import interface
 from zope import component
-if False: # pragma: no cover
-	from zope.deprecation import deprecated
-else:
-	def deprecated( name, msg ): pass
+from zope.deprecation import deprecated
+
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
 						 						 ILink,	 ILocation)
