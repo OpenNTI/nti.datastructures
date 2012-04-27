@@ -41,6 +41,9 @@
 	<adapter factory=".chat_transcripts.Transcript"
 			 for=".chat_transcripts._MeetingTranscriptStorage"
 			 provides=".interfaces.ITranscript" />
+	<subscriber
+		handler=".chat_transcripts._save_message_to_transcripts_subscriber"
+		/>
 
 	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
 
