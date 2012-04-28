@@ -12,6 +12,7 @@
 	<include package="z3c.bcrypt" />
 	<include package="nti.externalization" />
 	<include package="nti.chatserver" />
+	<include package="nti.contentlibrary" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
