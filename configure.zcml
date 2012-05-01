@@ -135,4 +135,9 @@
 	<adapter factory=".authorization_acl._LibraryTOCEntryACLProvider" />
 	<adapter factory=".authorization_acl._LibraryEntryACLProvider" />
 	<adapter factory=".providers._ProviderACLProvider" />
+
+	<!-- Temporary quiz adapters -->
+	<adapter factory="str nti.assessment.solution.QLatexSymbolicMathSolution"
+			 provides="nti.assessment.interfaces.IQLatexSymbolicMathSolution"
+			 for="nti.dataserver.quizzes.QuizQuestionAnswer"/>
 </configure>
