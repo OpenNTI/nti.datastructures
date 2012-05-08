@@ -18,6 +18,9 @@ import gevent.monkey
 if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	logger.info( "Monkey patching most libraries for gevent" )
 	# omit thread, it's required for multiprocessing futures, used in contentrendering
+	# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
+	# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
+	# plus would eliminate the need to manually patch these things)
 	gevent.monkey.patch_all(thread=False)
 
 	# However, locals we must also patch
