@@ -13,6 +13,7 @@
 import logging
 logger = logging.getLogger(__name__)
 
+
 import gevent
 import gevent.monkey
 if getattr( gevent, 'version_info', (0,) )[0] >= 1:
@@ -20,10 +21,27 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	# omit thread, it's required for multiprocessing futures, used in contentrendering
 	# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
 	# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
-	# plus would eliminate the need to manually patch these things)
-	gevent.monkey.patch_all(thread=False)
+	# plus would eliminate the need to manually patch these things).
+	gevent.monkey.patch_all(thread=False,subprocess=False)
+	# The problem is that multiprocessing.queues.Queue uses a half-duplex multiprocessing.Pipe,
+	# which is implemented with os.pipe() and _multiprocessing.Connection. os.pipe isn't patched
+	# by gevent, as it returns just a fileno. _multiprocessing.Connection is an internal implementation
+	# class implemented in C, which exposes a 'poll(timeout)' method; under the covers, this issues a
+	# (blocking) select() call: hence the need for a real thread. Except for that method, we could
+	# almost replace Connection with gevent.fileobject.SocketAdapter, plus a trivial
+	# patch to os.pipe (below). Sigh, so close. (With a little work, we could replicate that method)
 
-	# However, locals we must also patch
+	# import os
+	# import fcntl
+	# os_pipe = os.pipe
+	# def _pipe():
+	#	r, w = os_pipe()
+	#	fcntl.fcntl(r, fcntl.F_SETFL, os.O_NONBLOCK)
+	#	fcntl.fcntl(w, fcntl.F_SETFL, os.O_NONBLOCK)
+	#	return r, w
+	#os.pipe = _pipe
+
+	# Even if we don't patch threads, thread locals we MUST patch
 	import gevent.local
 	import threading
 	threading.local = gevent.local.local
@@ -31,7 +49,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	_threading_local.local = gevent.local.local
 
 	# depending on the order of imports, we may need to patch
-	# things up manually
+	# some things up manually. TODO: This list is not complete.
 	import transaction
 	if gevent.local.local not in transaction.ThreadTransactionManager.__bases__:
 		class GeventTransactionManager(transaction.TransactionManager):
