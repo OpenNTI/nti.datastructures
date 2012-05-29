@@ -23,6 +23,7 @@ import six
 from zope import interface
 from zope import component
 from zope.deprecation import deprecated
+from zope.container import contained, btree
 
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
@@ -534,19 +535,36 @@ class IDItemMixin(object):
 		return super(IDItemMixin,self).__getitem__(key)
 
 class ContainedMixin(object):
-	""" Defines something that can be logically contained inside another unit
-	by reference. Two properties are defined, id and containerId. """
+	"""
+	Defines something that can be logically contained inside another unit
+	by reference. Two properties are defined, id and containerId.
+
+	NOTE: See the interface definitions. For now, this is *not* the same as
+	`nti_interfaces.IZContained`. Your objects should probably also either
+	implement that interface, or extend `ZContainedMixins.`
+	"""
 
 	interface.implements( nti_interfaces.IContained )
 
+	# In case, through the vagaries of multiple inheritance, the initializer
+	# doesn't get called, define these attributes anyway
+	containerId = None
+	id = None
+
 	def __init__(self, containerId=None, containedId=None):
 		super(ContainedMixin,self).__init__()
-		self.containerId = containerId
-		self.id = containedId
+		if containerId is not None:
+			self.containerId = containerId
+		if containedId is not None:
+			self.id = containedId
 
-import zope.container.btree
+class ZContainedMixin(ContainedMixin,contained.Contained):
+	"""
+	Something that is both `nti_interfaces.IContained` and `nti_interfaces.IZContained`.
+	"""
 
-class ModDateTrackingBTreeContainer(zope.container.btree.BTreeContainer):
+
+class ModDateTrackingBTreeContainer(btree.BTreeContainer):
 	interface.implements( nti_interfaces.ILastModified )
 
 	def __init__( self ):

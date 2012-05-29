@@ -15,17 +15,22 @@ from nti.dataserver.datastructures import ModDateTrackingObject, ModDateTracking
 from nti.dataserver.datastructures import CaseInsensitiveModDateTrackingOOBTree
 from nti.dataserver.datastructures import KeyPreservingCaseInsensitiveModDateTrackingOOBTree
 from nti.dataserver.datastructures import LastModifiedCopyingUserList
-from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, CreatedModDateTrackingObject
+from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, ZContainedMixin, CreatedModDateTrackingObject
 
 from nti.externalization.externalization import toExternalObject
 from nti.externalization.oids import toExternalOID
 
 
-from nti.tests import has_attr
+from nti.tests import verifiably_provides
 import mock_dataserver
 from nti.dataserver import contenttypes
 from nti.dataserver import interfaces as nti_interfaces
 from nti.ntiids import ntiids
+
+def test_containedmixins():
+	cm = ZContainedMixin()
+	assert_that( cm, verifiably_provides( nti_interfaces.IContained ) )
+	assert_that( cm, verifiably_provides( nti_interfaces.IZContained ) )
 
 def test_moddatetrackingobject_oldstates():
 	mto = ModDateTrackingObject()
