@@ -15,6 +15,7 @@
 	<include package="nti.chatserver" />
 	<include package="nti.contentlibrary" />
 	<include package="nti.zodb" />
+	<include package="nti.contentrange" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
