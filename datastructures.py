@@ -796,6 +796,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 
 		if not nti_interfaces.IContained.providedBy( contained ):
+			# TODO: Should we proxy? zope containers proxy
 			raise _ContainedObjectValueError( "Contained object is not IContained", contained )
 		if not getattr( contained, 'containerId' ):
 			raise _ContainedObjectValueError( "Contained object has no containerId", contained )
