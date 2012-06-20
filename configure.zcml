@@ -93,7 +93,7 @@
 	<!-- Finding objects by mimetype -->
 	<adapter factory=".mimetype.ModeledContentTypeMimeFactory"
 			 provides="nti.externalization.interfaces.IMimeObjectFactory"
-			 for="dict" />
+			 for="dolmen.builtins.IDict" />
 
 
 	<!-- Groups and ACLs -->
