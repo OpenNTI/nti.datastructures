@@ -11,6 +11,19 @@
 	<include package="zope.generations" file="subscriber.zcml" />
 	<!-- Hashed password management. Includes zope.password -->
 	<include package="z3c.bcrypt" />
+
+	<!-- Int ids and persistent references by identity -->
+	<include package="zope.intid" />
+	<include package="zope.keyreference" />
+	<include package="zc.intid" />
+	<!-- This file has a bug, so we replicate its effect -->
+	<!--
+	<include package="zc.intid" file="zope-intid.zcml" />
+	-->
+	<class class="zc.intid.utility.IntIds">
+		<implements interface="zope.intid.interfaces.IIntIds"/>
+	</class>
+
 	<include package="nti.externalization" />
 	<include package="nti.chatserver" />
 	<include package="nti.contentlibrary" />
