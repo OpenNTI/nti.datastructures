@@ -106,6 +106,10 @@ def _isMagicKey( key ):
 
 isSyntheticKey = _isMagicKey
 
+# For speed and use in this function, we declare an 'inline'-able attribute
+
+_magic_keys = set( _syntheticKeys() )
+
 from nti.externalization.interfaces import StandardInternalFields, StandardExternalFields
 deprecated( "StandardExternalFields", "Prefer nti.externalization.interfaces" )
 deprecated( "StandardInternalFields", "Prefer nti.externalization.interfaces" )
@@ -198,13 +202,13 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 		return self.lastModified
 
 	def __delitem__(self, key):
-		if _isMagicKey( key ):
+		if  key in _magic_keys:
 			return
 		super(ModDateTrackingMappingMixin, self).__delitem__(key)
 		self.updateLastMod()
 
 	def __setitem__(self, key, y):
-		if _isMagicKey( key ):
+		if key in _magic_keys:
 			return
 
 		super(ModDateTrackingMappingMixin, self).__setitem__(key,y)
@@ -309,6 +313,13 @@ class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree
 import functools
 @functools.total_ordering
 class _CaseInsensitiveKey(object):
+	"""
+	This class implements a dictionary key that preserves case, but
+	compares case-insensitively.
+
+	This is a bit of a heavyweight solution. It is nonetheless optimized for comparisons
+	only with other objects of its same type. It must not be subclassed.
+	"""
 
 	def __init__( self, key ):
 		self.key = key
@@ -321,11 +332,15 @@ class _CaseInsensitiveKey(object):
 		return "%s('%s')" % (self.__class__, self.key)
 
 	def __eq__(self, other):
-		return other != None and self._lower_key == getattr(other, '_lower_key', None)
+		return other is self or (type(other) is _CaseInsensitiveKey and other._lower_key == self._lower_key)
 
 	def __lt__(self, other):
-		return self._lower_key < getattr(other, '_lower_key', other)
+		return type(other) == _CaseInsensitiveKey and self._lower_key < other._lower_key
 
+	def __gt__(self, other):
+		return type(other) == _CaseInsensitiveKey and self._lower_key > other._lower_key
+
+from repoze.lru import lru_cache
 class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
 	"""
 	This class should not be used as it changes the stored keys.
@@ -335,10 +350,11 @@ class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
 	def __init__(self, *args ):
 		super(CaseInsensitiveModDateTrackingOOBTree, self).__init__( *args )
 
+	@lru_cache(10000)
 	def _tx_key( self, key ):
 		# updateLastModified doesn't go through our transformation,
 		# so we must also not transform the Last Modified key
-		if not _isMagicKey( key ) and isinstance( key, six.string_types ):
+		if isinstance( key, basestring ) and not key in _magic_keys: # use basestring, not six.stringtypes, marginally faster
 			key = key.lower()
 		return key
 
@@ -370,8 +386,9 @@ class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateT
 	def __init__(self, *args ):
 		super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree, self).__init__( *args )
 
+	@lru_cache(10000)
 	def _tx_key( self, key ):
-		if not _isMagicKey( key ) and isinstance( key, six.string_types ):
+		if isinstance( key, basestring ) and not key in _magic_keys: # use basestring, not six.stringtypes, marginally faster
 			key = _CaseInsensitiveKey( key )
 		return key
 
