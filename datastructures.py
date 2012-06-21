@@ -332,13 +332,31 @@ class _CaseInsensitiveKey(object):
 		return "%s('%s')" % (self.__class__, self.key)
 
 	def __eq__(self, other):
-		return other is self or (type(other) is _CaseInsensitiveKey and other._lower_key == self._lower_key)
+		try:
+			return other is self or other._lower_key == self._lower_key
+		except AttributeError:
+			return NotImplemented
+
+	### NOTE: This class is slightly broken for ordering comparisons.
+	# We allow comparing ourself to string (and only strings)
+	# instead of return NotImplemented. This is not right, because
+	# equality doesn't do this. But it is necessary for backwards
+	# compatibility with existing sorted BTrees.
+	# TODO: How to really fix this?
+	# TODO: Could this lead to data loss? Something not less than, not greater
+	# than, but also not equal to something else?
 
 	def __lt__(self, other):
-		return type(other) == _CaseInsensitiveKey and self._lower_key < other._lower_key
+		try:
+			return self._lower_key < other._lower_key
+		except AttributeError:
+			return self._lower_key < other
 
 	def __gt__(self, other):
-		return type(other) == _CaseInsensitiveKey and self._lower_key > other._lower_key
+		try:
+			return self._lower_key > other._lower_key
+		except AttributeError:
+			return self._lower_key > other
 
 from repoze.lru import lru_cache
 class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
@@ -354,7 +372,7 @@ class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
 	def _tx_key( self, key ):
 		# updateLastModified doesn't go through our transformation,
 		# so we must also not transform the Last Modified key
-		if isinstance( key, basestring ) and not key in _magic_keys: # use basestring, not six.stringtypes, marginally faster
+		if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
 			key = key.lower()
 		return key
 
@@ -388,7 +406,7 @@ class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateT
 
 	@lru_cache(10000)
 	def _tx_key( self, key ):
-		if isinstance( key, basestring ) and not key in _magic_keys: # use basestring, not six.stringtypes, marginally faster
+		if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
 			key = _CaseInsensitiveKey( key )
 		return key
 

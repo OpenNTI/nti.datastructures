@@ -1,6 +1,6 @@
 
 from hamcrest import (assert_that, is_, has_entry, instance_of )
-from hamcrest import  is_in, not_none, is_not, greater_than
+from hamcrest import  is_in, not_none, is_not, greater_than, less_than
 from hamcrest import greater_than_or_equal_to,  has_item
 from hamcrest import same_instance
 from hamcrest.library import has_property as has_attr
@@ -15,7 +15,7 @@ from nti.dataserver.datastructures import ModDateTrackingObject, ModDateTracking
 from nti.dataserver.datastructures import CaseInsensitiveModDateTrackingOOBTree
 from nti.dataserver.datastructures import KeyPreservingCaseInsensitiveModDateTrackingOOBTree
 from nti.dataserver.datastructures import LastModifiedCopyingUserList
-from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, ZContainedMixin, CreatedModDateTrackingObject
+from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, ZContainedMixin, CreatedModDateTrackingObject, _CaseInsensitiveKey
 
 from nti.externalization.externalization import toExternalObject
 from nti.externalization.oids import toExternalOID
@@ -71,6 +71,16 @@ def test_moddatetrackingoobtree_resolveConflict():
 	# TODO: How to ensure it does the right thing? We don't know the times
 	mto._p_resolveConflict( oldstate, savedstate, newstate )
 
+def test_case_key_broken_comparisons():
+	"The CaseInsensitiveKey compares in the broken fashion old data depends on."
+
+	# See note in that class for details
+	# j k l
+	key = _CaseInsensitiveKey( "k" )
+
+	assert_that( key, is_( greater_than( "j" ) ) )
+	assert_that( key, is_( less_than( "l" ) ) )
+	assert_that( key, is_not( "k" ) )
 
 class TestCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
 
@@ -79,10 +89,21 @@ class TestCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
 		assert_that( 'k', is_in( CaseInsensitiveModDateTrackingOOBTree( {'K': 1 } ) ) )
 		assert_that( 'K', is_in( CaseInsensitiveModDateTrackingOOBTree( {'K': 1 } ) ) )
 
-		# The values are lowercased
+		# The keys are lowercased
 		cap_k = CaseInsensitiveModDateTrackingOOBTree( {'K': 1 } )
 		assert_that( 'k', is_in( list(cap_k.keys()) ) )
 		assert_that( ('k', 1), is_in( cap_k.items() ) )
+
+	def test_standard_keys(self):
+
+		cap_k = CaseInsensitiveModDateTrackingOOBTree( {'Devices': 1, 'FriendsLists': 2 } )
+		# Standard keys are not changed
+		assert_that( 'Last Modified', is_in( list( cap_k.keys() ) ) )
+		# Has entry uses .items(), check __getitem__ too
+		assert_that( cap_k, has_entry( 'Last Modified', greater_than( 0 ) ) )
+		assert_that( cap_k['Last Modified'], greater_than( 0 ) )
+		for k in cap_k:
+			assert_that( cap_k[k], is_( not_none() ) )
 
 class TestKeyPreservingCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
 
@@ -107,10 +128,27 @@ class TestKeyPreservingCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
 		assert_that( 'Last Modified', is_in( cap_k.keys() ) )
 		assert_that( cap_k, has_entry( 'Last Modified', greater_than_or_equal_to( 1 ) ) )
 		assert_that( cap_k['Last Modified'], greater_than_or_equal_to( 1 ) )
+		for k in cap_k:
+			assert_that( cap_k[k], is_( not_none() ) )
 
 		# The key can be deleted
 		del cap_k['k']
 		assert_that( 'K', is_not(is_in( cap_k ) ))
+
+	def test_standard_keys(self):
+		cap_k = KeyPreservingCaseInsensitiveModDateTrackingOOBTree()
+		cap_k['Devices'] = 1
+		cap_k['FriendsLists'] = 2
+		cap_k['SomethingElse'] = 3
+		cap_k['SomethingElse2'] = 4
+
+		# Standard keys are not changed
+		assert_that( 'Last Modified', is_in( list( cap_k.keys() ) ) )
+		# Has entry uses .items(), check __getitem__ too
+		assert_that( cap_k, has_entry( 'Last Modified', greater_than( 0 ) ) )
+		assert_that( cap_k['Last Modified'], greater_than( 0 ) )
+		for k in cap_k:
+			assert_that( cap_k[k], is_( not_none() ) )
 
 	def test_copy( self ):
 		low_k = CaseInsensitiveModDateTrackingOOBTree( {'K': 1 } )
