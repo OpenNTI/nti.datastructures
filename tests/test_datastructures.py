@@ -205,7 +205,7 @@ class TestPersistentExternalizableWeakList(unittest.TestCase):
 
 class TestContainedStorage(mock_dataserver.ConfiguringTestBase):
 
-	class C(CreatedModDateTrackingObject,ContainedMixin): pass
+	class C(CreatedModDateTrackingObject,ZContainedMixin): pass
 
 	def test_container_type(self):
 		# Do all the operations work with dictionaries?

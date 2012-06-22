@@ -48,12 +48,13 @@
 	<adapter factory=".chat_transcripts._UserTranscriptStorageAdapter"
 			 />
 	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
-			 for=".chat_transcripts._MeetingTranscriptStorage"
-			 provides="nti.externalization.interfaces.IExternalObject" />
+			 provides=".interfaces.ITranscriptSummary" />
+
 	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
-			 for=".chat_transcripts._MeetingTranscriptStorage"
-			 provides="nti.externalization.interfaces.IExternalObject"
-			 name="wsgi"/>
+			 provides="nti.externalization.interfaces.IInternalObjectIO" />
+	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
+			 provides="nti.externalization.interfaces.IInternalObjectIO"
+			 name="wsgi"/> <!-- TODO: Not used anymore? -->
 
 	<adapter factory=".chat_transcripts.Transcript"
 			 for=".chat_transcripts._MeetingTranscriptStorage"

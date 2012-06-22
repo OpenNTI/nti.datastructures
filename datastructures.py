@@ -789,12 +789,17 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		---depending, of course, on the value given at construction time.
 		"""
 
-
+		# Notice we don't proxy to these interfaces, as zope.container does
+		# (and would do automatically for IZContained). That results in extra objects
+		# in the database and some confusing messages. Easier to ensure that all objects
+		# meet our requirements
 		if not nti_interfaces.IContained.providedBy( contained ):
-			# TODO: Should we proxy? zope containers proxy
 			raise _ContainedObjectValueError( "Contained object is not IContained", contained )
+		if not nti_interfaces.IZContained.providedBy( contained ):
+			raise _ContainedObjectValueError( "Contained object is not IZContained", contained )
+
 		if not getattr( contained, 'containerId' ):
-			raise _ContainedObjectValueError( "Contained object has no containerId", contained )
+			raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
 
 		container = self.containers.get( contained.containerId, None )
 		if container is None:
