@@ -85,6 +85,22 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 		zope.component.hooks.siteinfo = SiteInfo()
 		del SiteInfo
 
+	from logging import LogRecord
+	from gevent import getcurrent, Greenlet
+	class _LogRecord(LogRecord):
+		def __init__( self, *args, **kwargs ):
+			LogRecord.__init__( self, *args, **kwargs )
+			# TODO: Respect logging.logThreads?
+			if self.threadName == 'MainThread':
+				current = getcurrent()
+				if type(current) == Greenlet \
+				  or isinstance( current, Greenlet ):
+				  self.thread = id( current )
+				  self.threadName = current._formatinfo()
+
+	logging.LogRecord = _LogRecord
+
+	del _LogRecord
 	del zope
 	del transaction
 	del threading
