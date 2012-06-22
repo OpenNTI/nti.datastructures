@@ -359,6 +359,24 @@ class _CaseInsensitiveKey(object):
 			return self._lower_key > other
 
 from repoze.lru import lru_cache
+
+# These work best as plain functions so that the 'self'
+# argument is not captured. The self argument is persistent
+# and so that messes with caches
+@lru_cache(10000)
+def _tx_key_lower(key):
+	# updateLastModified doesn't go through our transformation,
+	# so we must also not transform the Last Modified key
+	if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
+		key = key.lower()
+	return key
+
+@lru_cache(10000)
+def _tx_key_insen(key):
+	if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
+		key = _CaseInsensitiveKey( key )
+	return key
+
 class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
 	"""
 	This class should not be used as it changes the stored keys.
@@ -368,13 +386,8 @@ class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
 	def __init__(self, *args ):
 		super(CaseInsensitiveModDateTrackingOOBTree, self).__init__( *args )
 
-	@lru_cache(10000)
 	def _tx_key( self, key ):
-		# updateLastModified doesn't go through our transformation,
-		# so we must also not transform the Last Modified key
-		if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
-			key = key.lower()
-		return key
+		return _tx_key_lower( key )
 
 	def __getitem__(self, key):
 		key = self._tx_key( key )
@@ -404,11 +417,8 @@ class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateT
 	def __init__(self, *args ):
 		super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree, self).__init__( *args )
 
-	@lru_cache(10000)
 	def _tx_key( self, key ):
-		if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
-			key = _CaseInsensitiveKey( key )
-		return key
+		return _tx_key_insen( key )
 
 	def keys(self,key=None):
 		# TODO: Don't force this to be materialized
