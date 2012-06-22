@@ -37,7 +37,7 @@ import nti.externalization.interfaces as ext_interfaces
 # Deprecated below, used in this module. Re-exported for b/c
 from nti.externalization.oids import to_external_ntiid_oid
 from nti.externalization.externalization import toExternalObject
-from nti.externalization.datastructures import ExternalizableDictionaryMixin
+from nti.externalization.datastructures import ExternalizableDictionaryMixin, LocatedExternalList, LocatedExternalDict
 from nti.externalization.persistence import PersistentExternalizableWeakList
 from nti.externalization.persistence import PersistentExternalizableList
 
@@ -1036,12 +1036,13 @@ deprecated( "toExternalObject", "Prefer nti.externalization.externalization.toEx
 # deprecated( "stripSyntheticKeysFromExternalDictionary", "Prefer nti.externalization.externalization.stripSyntheticKeysFromExternalDictionary" )
 # deprecated( "DefaultNonExternalizableReplacer", "Prefer nti.externalization.externalization.DefaultNonExternalizableReplacer" )
 # deprecated( "stripNoneFromExternal", "Prefer nti.externalization.externalization.stripNoneFromExternal" )
-# deprecated( "LocatedExternalList", "Prefer nti.externalization.datastructures.LocatedExternalList" )
+# There may be persistent data referring to these still
+deprecated( "LocatedExternalList", "Prefer nti.externalization.datastructures.LocatedExternalList" )
 deprecated( "ExternalizableDictionaryMixin", "Prefer nti.externalization.datastructures.ExternalizableDictionaryMixin" )
-# deprecated( "LocatedExternalDict", "Prefer nti.externalization.datastructures.LocatedExternalDict" )
-# deprecated( "ExternalizableInstanceDict", "Prefer nti.externalization.datastructures.ExternalizableInstanceDict" )
+deprecated( "LocatedExternalDict", "Prefer nti.externalization.datastructures.LocatedExternalDict" )
+deprecated( "ExternalizableInstanceDict", "Prefer nti.externalization.datastructures.ExternalizableInstanceDict" )
 # deprecated( "isSyntheticKey", "Prefer nti.externalization.datastructures.isSyntheticKey" )
-# deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.persistence.PersistentExternalizableDictionary" )
+deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.persistence.PersistentExternalizableDictionary" )
 # deprecated( "getPersistentState", "Prefer nti.externalization.persistence.getPersistentState" )
 # deprecated( "setPersistentStateChanged", "Prefer nti.externalization.persistence.setPersistentStateChanged" )
 deprecated( "PersistentExternalizableWeakList", "Prefer nti.externalization.persistence.PersistentExternalizableWeakList" )
