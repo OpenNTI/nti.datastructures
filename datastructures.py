@@ -624,6 +624,9 @@ class _ContainedObjectValueError(ValueError):
 			cstr = '{%s}' % e
 		super(_ContainedObjectValueError,self).__init__( "%s [type: %s repr %s]" % (string, ctype, cstr) )
 
+from zope.location import locate
+
+@interface.implementer(nti_interfaces.IZContained)
 class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	"""
 	A specialized data structure for tracking contained objects.
@@ -638,6 +641,9 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	# from newState (the only thing that would have changed
 	# is last modified), updating lastModified to now.
 	####
+
+	__parent__ = None
+	__name__ = None
 
 	def __init__( self, weak=False, create=False, containers=None, containerType=ModDateTrackingBTreeContainer,
 				  set_ids=True, containersType=ModDateTrackingOOBTree):
@@ -815,6 +821,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		if container is None:
 			container = self.containerType()
 			self.containers[contained.containerId] = container
+			if nti_interfaces.ILocation.providedBy( container ):
+				locate( container, self, contained.containerId )
 
 		if isinstance( container, collections.Mapping ):
 			# don't allaw adding a new object on top of an existing one,
