@@ -143,6 +143,7 @@
 			title="" />
 
 	<!-- ACL providers -->
+	<adapter factory=".authorization_acl._EntityACLProvider" />
 	<adapter factory=".authorization_acl._CreatedACLProvider" />
 	<adapter factory=".authorization_acl._ShareableModeledContentACLProvider" />
 	<adapter factory=".authorization_acl._SectionInfoACLProvider" />
