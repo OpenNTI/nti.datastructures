@@ -17,13 +17,12 @@ import persistent
 import BTrees.OOBTree
 import ZODB
 
-import six
-
 
 from zope import interface
 from zope import component
 from zope.deprecation import deprecated
 from zope.container import contained, btree
+from zope.location import interfaces as loc_interfaces
 
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
@@ -32,6 +31,7 @@ from . import links
 
 from . import mimetype
 from nti.dataserver import interfaces as nti_interfaces
+from nti.dataserver import containers as container
 import nti.externalization.interfaces as ext_interfaces
 
 # Deprecated below, used in this module. Re-exported for b/c
@@ -227,6 +227,8 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 		result = super(ModDateTrackingMappingMixin, self).popitem()
 		self.updateLastMod()
 		return result
+
+
 
 class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
 	# This class and subclasses
@@ -437,6 +439,12 @@ class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateT
 		return ((getattr(k,'key',k),v) for k,v in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).items())
 
 collections.Mapping.register( BTrees.OOBTree.OOBTree )
+# See the notes in that package. It's not safe to subclass btrees.
+# Consider zc.dict if necessary
+deprecated( 'KeyPreservingCaseInsensitiveModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
+deprecated( 'CaseInsensitiveModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
+deprecated( 'ModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
+deprecated( 'ModDateTrackingMappingMixin', 'Stores a key in the dictionary, not recommended.' )
 
 class ModDateTrackingPersistentMapping(ModDateTrackingMappingMixin, persistent.mapping.PersistentMapping, ExternalizableDictionaryMixin):
 
@@ -609,6 +617,9 @@ class KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer(ModDateTrackingB
 	def _newContainerData(self):
 		return KeyPreservingCaseInsensitiveModDateTrackingOOBTree()
 
+deprecated( 'ModDateTrackingBTreeContainer', "use nti.dataserver.container classes instead." )
+deprecated( 'KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer', "use nti.dataserver.container classes instead." )
+
 def _noop(*args): pass
 
 class _ContainedObjectValueError(ValueError):
@@ -626,7 +637,7 @@ class _ContainedObjectValueError(ValueError):
 
 from zope.location import locate
 
-@interface.implementer(nti_interfaces.IZContained)
+@interface.implementer(nti_interfaces.IZContained, loc_interfaces.ISublocations)
 class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	"""
 	A specialized data structure for tracking contained objects.
@@ -645,8 +656,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	__parent__ = None
 	__name__ = None
 
-	def __init__( self, weak=False, create=False, containers=None, containerType=ModDateTrackingBTreeContainer,
-				  set_ids=True, containersType=ModDateTrackingOOBTree):
+	def __init__( self, weak=False, create=False, containers=None, containerType=container.LastModifiedBTreeContainer,
+				  set_ids=True, containersType=BTrees.OOBTree.OOBTree):
 		"""
 		Creates a new container.
 
@@ -655,7 +666,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 			of objects added to us will be set. If `create` is a boolean, this `creator` property
 			will be set to this object (useful for subclassing). Otherwise, the `creator` property
 			will be set to the value of `create`.
-		:param dict containers: Initial containers
+		:param dict containers: Initial containers. We do not adopt these containers, they may already have a __parent__
+			(presumably an ancestor of ours as well)
 		:param type containerType: The type for each created container. Should be a mapping
 			type, and should handle conflicts. The default value only allows comparable keys.
 		:param type containersType: The mapping type factory that will hold the containers.
@@ -673,6 +685,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		self._setup( )
 
 		for k,v in (containers or {}).iteritems():
+			# Notice that we're not using addContainer: these don't
+			# become our children.
 			self.containers[k] = v
 
 	def _setup( self ):
@@ -774,6 +788,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		if container is None or containerId is None:
 			raise TypeError( 'Container/Id cannot be None' )
 		self.containers[containerId] = container
+		if loc_interfaces.ILocation.providedBy( container ):
+			locate( container, self, containerId )
 
 	def deleteContainer( self, containerId ):
 		"""
@@ -820,9 +836,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		container = self.containers.get( contained.containerId, None )
 		if container is None:
 			container = self.containerType()
-			self.containers[contained.containerId] = container
-			if nti_interfaces.ILocation.providedBy( container ):
-				locate( container, self, contained.containerId )
+			self.addContainer( contained.containerId, container )
 
 		if isinstance( container, collections.Mapping ):
 			# don't allaw adding a new object on top of an existing one,
@@ -1006,6 +1020,12 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	def iteritems(self):
 		return self.containers.iteritems()
 
+	def itervalues(self):
+		return self.containers.itervalues()
+
+	def sublocations(self):
+		return (container for container in self.itervalues() if loc_interfaces.ILocation.providedBy(container))
+
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
 class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
@@ -1042,6 +1062,46 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 		if not self.contained_type.providedBy( item ):
 			raise InvalidItemType( self, item, (self.contained_type,) )
 		super(AbstractNamedContainerMap,self).__setitem__(key, item)
+
+deprecated('AbstractNamedContainerMap', "Prefer AbstractNamedLastModifiedBTreeContainer" )
+
+class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContainer):
+	"""
+	A container that implements the basics of a :class:`INamedContainer` as
+	a mapping.
+
+	You must supply the `contained_type` attribute and the `container_name`
+	attribute.
+
+	You *should* define a specific interface for each type of homogeneous
+	container. This interface should use :func:`zope.container.constraints.contains`
+	to declare that it `contains` the `contained_type`. (The `contained_type` will
+	one day be deprecated.) This object will check the constraints declared
+	in the interfaces for the container and the objects.
+	"""
+
+	interface.implements( nti_interfaces.IHomogeneousTypeContainer,
+						  nti_interfaces.INamedContainer,
+						  nti_interfaces.ILastModified )
+
+	contained_type = None
+	container_name = None
+
+	def __init__( self, *args, **kwargs ):
+		super(AbstractNamedLastModifiedBTreeContainer,self).__init__( *args, **kwargs )
+
+	def __setitem__(self, key, item):
+		# TODO: Finish porting this all over to the constraints in zope.container.
+		# That will require specific subtypes for each contained_type (which we already have)
+		# We start the process by using checkObject to validate any preconditions
+		# that are defined
+		checkObject( self, key, item )
+		if not self.contained_type.providedBy( item ):
+			raise InvalidItemType( self, item, (self.contained_type,) )
+		super(AbstractNamedLastModifiedBTreeContainer,self).__setitem__(key, item)
+
+class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsensitiveLastModifiedBTreeContainer,AbstractNamedLastModifiedBTreeContainer):
+	pass
 
 from nti.zodb.minmax import MergingCounter
 deprecated( "MergingCounter", "Prefer nti.zodb.minmax" )

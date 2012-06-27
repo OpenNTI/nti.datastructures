@@ -11,21 +11,24 @@ import collections
 
 import persistent
 
-from nti.dataserver.datastructures import ModDateTrackingObject, ModDateTrackingOOBTree
-from nti.dataserver.datastructures import CaseInsensitiveModDateTrackingOOBTree
-from nti.dataserver.datastructures import KeyPreservingCaseInsensitiveModDateTrackingOOBTree
-from nti.dataserver.datastructures import LastModifiedCopyingUserList
-from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, ZContainedMixin, CreatedModDateTrackingObject, _CaseInsensitiveKey
+import nti.deprecated
 
-from nti.externalization.externalization import toExternalObject
-from nti.externalization.oids import toExternalOID
+with nti.deprecated.hiding_warnings():
+	from nti.dataserver.datastructures import ModDateTrackingObject, ModDateTrackingOOBTree
+	from nti.dataserver.datastructures import CaseInsensitiveModDateTrackingOOBTree
+	from nti.dataserver.datastructures import KeyPreservingCaseInsensitiveModDateTrackingOOBTree
+	from nti.dataserver.datastructures import LastModifiedCopyingUserList
+	from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, ZContainedMixin, CreatedModDateTrackingObject, _CaseInsensitiveKey
+
+	from nti.externalization.externalization import toExternalObject
+	from nti.externalization.oids import toExternalOID
 
 
-from nti.tests import verifiably_provides
-import mock_dataserver
-from nti.dataserver import contenttypes
-from nti.dataserver import interfaces as nti_interfaces
-from nti.ntiids import ntiids
+	from nti.tests import verifiably_provides
+	import mock_dataserver
+	from nti.dataserver import contenttypes
+	from nti.dataserver import interfaces as nti_interfaces
+	from nti.ntiids import ntiids
 
 def test_containedmixins():
 	cm = ZContainedMixin()
