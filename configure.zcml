@@ -5,6 +5,7 @@
 	<include package="zope.location" />
 	<include package="zope.traversing" />
 	<include package="zope.container" />
+	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
 	<include package="zope.security" />
 	<include package="zope.generations" />
@@ -164,4 +165,17 @@
 	<adapter factory="str nti.assessment.solution.QLatexSymbolicMathSolution"
 			 provides="nti.assessment.interfaces.IQLatexSymbolicMathSolution"
 			 for="nti.dataserver.quizzes.QuizQuestionAnswer"/>
+
+	<!--
+		Let annotations be stored on some objects, primarily for the
+		purpose of getting created and last modified information
+		through dublincore.
+	-->
+	<class class="nti.assessment.assessed.QAssessedQuestion">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
+
+	<class class="nti.assessment.assessed.QAssessedQuestionSet">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
 </configure>
