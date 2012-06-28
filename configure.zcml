@@ -45,6 +45,7 @@
 	<!-- Container events -->
 	<subscriber handler=".containers.update_container_modified_time" />
 	<subscriber handler=".containers.update_parent_modified_time" />
+	<subscriber handler=".containers.update_object_modified_time" />
 
 	<!-- Chat -->
 	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
