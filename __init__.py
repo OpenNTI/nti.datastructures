@@ -170,6 +170,8 @@ _nti_traversePathElement.__code__ = _zadapters.traversePathElement.__code__
 # Carefully add the right globals. Too much screws things up
 _nti_traversePathElement.func_globals['ITraversable'] = _zinterfaces.ITraversable
 _nti_traversePathElement.func_globals['LocationError'] = _zinterfaces.TraversalError
+_nti_traversePathElement.func_globals['nsParse'] = _zadapters.nsParse
+_nti_traversePathElement.func_globals['namespaceLookup'] = _zadapters.namespaceLookup
 
 def _patched_traversePathElement(obj, name, further_path, default=_marker,
 								 traversable=None, request=None ):
