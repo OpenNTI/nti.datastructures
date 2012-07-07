@@ -798,6 +798,17 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		"""
 		del self.containers[containerId]
 
+	def getOrCreateContainer( self, containerId ):
+		"""
+		Return a container for the given containerId. If one
+		does not already exist, it will be created and stored.
+		"""
+		container = self.containers.get( containerId, None )
+		if container is None:
+			container = self.containerType()
+			self.addContainer( containerId, container )
+		return container
+
 	def maybeCreateContainedObjectWithType( self, datatype, externalValue ):
 		""" If we recognize and own the given datatype, creates
 		a new default instance and returns it. Otherwise returns
@@ -833,10 +844,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		if not getattr( contained, 'containerId' ):
 			raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
 
-		container = self.containers.get( contained.containerId, None )
-		if container is None:
-			container = self.containerType()
-			self.addContainer( contained.containerId, container )
+		container = self.getOrCreateContainer( contained.containerId )
 
 		if isinstance( container, collections.Mapping ):
 			# don't allaw adding a new object on top of an existing one,
