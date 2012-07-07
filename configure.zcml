@@ -30,6 +30,7 @@
 	<include package="nti.contentlibrary" />
 	<include package="nti.zodb" />
 	<include package="nti.contentrange" />
+	<include package="nti.contentfragments" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
