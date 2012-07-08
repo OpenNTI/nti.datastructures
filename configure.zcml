@@ -1,6 +1,8 @@
 <!-- -*- mode: nxml -*- -->
-<configure xmlns="http://namespaces.zope.org/zope"
-		   i18n_domain="zope">
+<configure
+	xmlns="http://namespaces.zope.org/zope"
+	xmlns:ext="http://nextthought.com/ntp/ext"
+	i18n_domain="zope">
 	<include package="zope.component" />
 	<include package="zope.location" />
 	<include package="zope.traversing" />
@@ -25,7 +27,9 @@
 		<implements interface="zope.intid.interfaces.IIntIds"/>
 	</class>
 
+	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
+	<ext:registerMimeFactories module=".contenttypes" />
 	<include package="nti.chatserver" />
 	<include package="nti.contentlibrary" />
 	<include package="nti.zodb" />
