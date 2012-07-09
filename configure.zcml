@@ -27,6 +27,20 @@
 		<implements interface="zope.intid.interfaces.IIntIds"/>
 	</class>
 
+	<!-- contentratings -->
+	<!-- It requires i18n support, but we disable its browser support -->
+	<include package="zope.i18n" file="meta.zcml" />
+	<exclude package="contentratings.browser" />
+	<include package="contentratings" />
+	<include package="contentratings" file="meta.zcml" />
+	<configure
+		xmlns:contentratings="http://namespaces.plone.org/contentratings">
+		<contentratings:category
+			for=".interfaces.ILikeable"
+			title="Likes"
+			name="likes" />
+	</configure>
+
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
 	<ext:registerMimeFactories module=".contenttypes" />
@@ -103,6 +117,8 @@
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
 	<subscriber factory=".datastructures.MimeTypeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
+	<subscriber factory=".liking.LikeDecorator"
+				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
 	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
 
 

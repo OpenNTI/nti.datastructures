@@ -129,23 +129,26 @@ def find_links( self ):
 	_links.extend( getattr( self, 'links', () ) )
 	return _links
 
-
+@interface.implementer(ext_interfaces.IExternalMappingDecorator)
+@component.adapter(object)
 class LinkDecorator(object):
-	interface.implements(ext_interfaces.IExternalMappingDecorator)
-	component.adapts(object)
 
 	def __init__( self, o ):
 		pass
 
 	def decorateExternalMapping( self, orig, result ):
+		# We have no way to know what order these will be
+		# called in, so we must preserve anything that exists
+		orig_links = result.get( StandardExternalFields.LINKS, () )
 		_links = find_links(orig)
 		_links = [toExternalObject(l) for l in _links if l]
-		_links = [l for l in _links if l]
+		_links = [l for l in _links if l] # strip none
 		if _links:
 			for link in _links:
 				interface.alsoProvides( link, ILocation )
 				link.__name__ = ''
 				link.__parent__ = self
+			_links.extend( orig_links )
 			result[StandardExternalFields.LINKS] = _links
 
 class MimeTypeDecorator(object):
