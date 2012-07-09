@@ -151,9 +151,9 @@ class LinkDecorator(object):
 			_links.extend( orig_links )
 			result[StandardExternalFields.LINKS] = _links
 
+@interface.implementer(ext_interfaces.IExternalMappingDecorator)
+@component.adapter(object)
 class MimeTypeDecorator(object):
-	interface.implements(ext_interfaces.IExternalMappingDecorator)
-	component.adapts(object)
 
 	def __init__( self, o ):
 		pass
@@ -164,11 +164,11 @@ class MimeTypeDecorator(object):
 			if mime_type:
 				result[StandardExternalFields.MIMETYPE] = mime_type
 
+@interface.implementer(ext_interfaces.INonExternalizableReplacer)
+@component.adapter(ILink)
 class LinkNonExternalizableReplacer(object):
 	"We expect higher levels to handle links, so we let them through."
 	# TODO: This probably belongs /at/ that higher level, not here
-	interface.implements(ext_interfaces.INonExternalizableReplacer)
-	component.adapts(ILink)
 
 	def __init__( self, o ):
 		pass
