@@ -5,7 +5,7 @@ from hamcrest import greater_than_or_equal_to,  has_item
 from hamcrest import same_instance
 from hamcrest.library import has_property as has_attr
 import unittest
-
+from nose.tools import assert_raises
 
 import collections
 
@@ -209,6 +209,23 @@ class TestPersistentExternalizableWeakList(unittest.TestCase):
 class TestContainedStorage(mock_dataserver.ConfiguringTestBase):
 
 	class C(CreatedModDateTrackingObject,ZContainedMixin): pass
+
+	def test_idempotent_add_even_when_wrapped(self):
+		cs = ContainedStorage( weak=True )
+		obj = self.C()
+		obj.containerId = 'foo'
+		cs.addContainedObject( obj )
+
+		# And again with no problems
+		cs.addContainedObject( obj )
+
+		# But a new one breaks
+		old_id = obj.id
+		obj = self.C()
+		obj.containerId = 'foo'
+		obj.id = old_id
+		with assert_raises( KeyError ):
+			cs.addContainedObject( obj )
 
 	def test_container_type(self):
 		# Do all the operations work with dictionaries?

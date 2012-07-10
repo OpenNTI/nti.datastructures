@@ -856,12 +856,17 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 		if isinstance( container, collections.Mapping ):
 			# don't allaw adding a new object on top of an existing one,
-			# unless the existing one is broken (migration botched, etc)
-			if hasattr(contained, StandardInternalFields.ID ) \
-				and getattr(contained, StandardInternalFields.ID) \
-				and container.get(contained.id,contained) is not contained \
-				and ZODB.interfaces.IBroken not in interface.providedBy( container.get( contained.id ) ):
-				raise KeyError( "Contained object uses existing ID " + str(contained.id) )
+			# unless the existing one is broken (migration botched, etc).
+			# Be idempotent, though, and ignore the same object (taking wrapping into account)
+			if contained.id:
+				existing = container.get( contained.id, None )
+				if existing is not None:
+					existing = self._v_unwrap( existing )
+					if existing is contained:
+						return existing # Nothing more do do
+					# OK, so it's not contained. Is it broken?
+					if ZODB.interfaces.IBroken not in interface.providedBy( existing ):
+					  raise KeyError( "Contained object uses existing ID " + str(contained.id) )
 
 		## Save
 		if not contained.id and not self.set_ids:
