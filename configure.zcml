@@ -39,6 +39,10 @@
 			for=".interfaces.ILikeable"
 			title="Likes"
 			name="likes" />
+		<contentratings:category
+			for=".interfaces.IFavoritable"
+			title="Favorites"
+			name="favorites" />
 	</configure>
 
 	<include package="nti.externalization" file="meta.zcml" />
