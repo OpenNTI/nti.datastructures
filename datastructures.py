@@ -21,7 +21,7 @@ import ZODB
 from zope import interface
 from zope import component
 from zope.deprecation import deprecated
-from zope.container import contained, btree
+from zope.container import contained as zcontained, btree
 from zope.location import interfaces as loc_interfaces
 
 
@@ -574,7 +574,7 @@ class ContainedMixin(object):
 		if containedId is not None:
 			self.id = containedId
 
-class ZContainedMixin(ContainedMixin,contained.Contained):
+class ZContainedMixin(ContainedMixin,zcontained.Contained):
 	"""
 	Something that is both `nti_interfaces.IContained` and `nti_interfaces.IZContained`.
 	"""
@@ -673,6 +673,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 			(presumably an ancestor of ours as well)
 		:param type containerType: The type for each created container. Should be a mapping
 			type, and should handle conflicts. The default value only allows comparable keys.
+			The type can also be a `list` type, though this use is deprecated and discouraged.
 		:param type containersType: The mapping type factory that will hold the containers.
 			Default is :class:`ModDateTrackingOOBTree`, another choice is :class:`CaseInsensitiveModDateTrackingOOBTree`.
 		:param bool set_ids: If true (default) the ``id`` field of newly added objects will be set.
@@ -739,10 +740,14 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 					if v == d:
 						del c[k]
 						return v
-				raise ValueError
+				raise ValueError(d)
+			# Lists. Note that duplicates may have
+			# crept in. TODO: We should probably remove them all
+			ix = None
 			ix = c.index( d )
 			d = c[ix]
 			c.pop( ix )
+			return d
 
 
 		self._v_putInContainer = _put_in_container
@@ -927,27 +932,32 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		return self.deleteEqualContainedObject( self.getContainedObject( containerId, containedId ) )
 
 
-	def deleteEqualContainedObject( self, contained ):
+	def deleteEqualContainedObject( self, contained, log_level=logging.DEBUG ):
 		"""
 		Given an object contained herein, removes it. Returns the removed
 			object, if found, else returns None.
+		:param log_level: The level at which we log if we are unable to delete
+			the object. If this is expected to be common and harmless, set it lower than DEBUG.
 		"""
 		if contained is None or contained.containerId is None:
-			logger.debug( "Unable to delete object equal to None or with no containerId: %s", contained )
+			logger.log( log_level, "Unable to delete object equal to None or with no containerId: %s", contained )
 			return None
 		container = self.containers.get( contained.containerId )
 		if container is None:
-			logger.debug( "Unable to delete object we have no container for: %s (%s) (%s) (%s %r %r %r)",
-								  contained.containerId, list(self.containers.keys()),
-								  self.containers._p_state, self.containers._p_jar, self.containers._p_oid, self.containers._p_serial,
-								  contained )
+			logger.log(
+				log_level,
+				"Unable to delete object we (%r) have no container for: %s (%s) (%s) (%s %r %r %r)",
+				self,
+				contained.containerId, list(self.containers.keys()),
+				self.containers._p_state, self.containers._p_jar, self.containers._p_oid, self.containers._p_serial,
+				contained )
 			return None
 
 		wrapped = self._v_wrap( contained ) # outside the catch
 		try:
 			contained = self._v_unwrap( self._v_removeFromContainer( container, wrapped ) )
 		except ValueError:
-			logger.debug( "Failed to find object to delete equal to %s", contained )
+			logger.log( log_level, "Failed to find object to delete equal to %s", contained )
 			return None
 		except TypeError:
 			# Getting here means that we are no longer able to resolve
@@ -966,7 +976,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 				if strong is not None and strong != contained:
 					container.append( strong )
 				else:
-					logger.debug( "Dropping obj by equality/missing during delete %s == %s", strong, contained )
+					logger.log( log_level, "Dropping obj by equality/missing during delete %s == %s", strong, contained )
 			return None
 		else:
 			self._updateContainerLM( container )
@@ -1036,6 +1046,9 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 	def sublocations(self):
 		return (container for container in self.itervalues() if loc_interfaces.ILocation.providedBy(container))
+
+	def __repr__( self ):
+		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
 
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
