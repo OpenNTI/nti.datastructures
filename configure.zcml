@@ -38,11 +38,13 @@
 		<contentratings:category
 			for=".interfaces.ILikeable"
 			title="Likes"
-			name="likes" />
+			name="likes"
+			storage=".liking._BinaryUserRatings" />
 		<contentratings:category
 			for=".interfaces.IFavoritable"
 			title="Favorites"
-			name="favorites" />
+			name="favorites"
+			storage=".liking._BinaryUserRatings" />
 	</configure>
 
 	<include package="nti.externalization" file="meta.zcml" />
