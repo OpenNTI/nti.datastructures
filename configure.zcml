@@ -16,8 +16,24 @@
 	<include package="z3c.bcrypt" />
 
 	<!-- Int ids and persistent references by identity -->
+	<!--
+	If we load zope.intid, we get subscribers for the Object
+	events that ensure all ILocation objects are
+	registered/unregistered when they are added/removed, plus
+	another set of events when they get/lose intids. This
+	second set of events is meant to update zope.catalog
+	(which we don't have).
+	A consequence of this is that ILocation objects must be adaptable
+	to KeyReferences when the are Added (for purposes of zope.catalog, which we don't
+	care about, but this also
+	ensures that they have ZODB Connections, which is good).
+	-->
 	<include package="zope.intid" />
 	<include package="zope.keyreference" />
+	<!--
+	zc.intid fires a different set of events when objects gain/lose
+	intids.
+	-->
 	<include package="zc.intid" />
 	<!-- This file has a bug, so we replicate its effect -->
 	<!--
