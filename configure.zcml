@@ -117,8 +117,9 @@
 	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
 
 	<!-- Externalization -->
-	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
+<!--	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
 			 name="wsgi" />
+-->
 	<adapter factory=".users_external._EntitySummaryExternalObject"
 			 name="summary" />
 	<adapter factory=".users_external._UserSummaryExternalObject"
@@ -142,6 +143,15 @@
 	<subscriber factory=".liking.LikeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
 	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
+<!--
+	It breaks fewer test cases to let these pass right on through with
+	the LinkNonExternalizableReplacer...they like to get the .target
+	and .rel attributes. So we count on fixing things up with the
+	LinkExternalObjectDecorator registered next
+	<adapter factory=".links_external.LinkExternal" />
+-->
+	<subscriber factory=".links_external.LinkExternalObjectDecorator"
+				provides="nti.externalization.interfaces.IExternalObjectDecorator" />
 
 
 	<!-- Finding objects by mimetype -->
