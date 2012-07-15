@@ -62,6 +62,7 @@
 			name="favorites"
 			storage=".liking._BinaryUserRatings" />
 	</configure>
+	<subscriber handler=".liking.update_last_mod_on_rated" />
 
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
