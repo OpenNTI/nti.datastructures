@@ -236,4 +236,21 @@
 	<class class="nti.assessment.assessed.QAssessedQuestionSet">
 		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
 	</class>
+
+	<!-- NTIID Resolvers -->
+	<utility factory=".ntiids._OIDResolver" name="OID" />
+	<utility factory=".ntiids._ClassResolver" name="Class" />
+	<utility factory=".ntiids._ClassResolver" name="MeetingRoom:Class" />
+	<utility factory=".ntiids._SectionResolver" name="ClassSection" />
+	<utility factory=".ntiids._SectionResolver" name="MeetingRoom:ClassSection" />
+	<utility factory=".ntiids._ContentResolver" name="HTML" />
+	<utility factory=".ntiids._AssessmentResolver" name="NAQ" />
+	<utility factory=".ntiids._MeetingRoomResolver" name="MeetingRoom" />
+	<utility factory=".ntiids._MeetingRoomResolver" name="MeetingRoom:Group" />
+	<utility factory=".ntiids._TranscriptResolver" name="Transcript" />
+
+	<utility factory=".ntiids._UGDResolver" name="Note" />
+	<!-- Legacy quizzes are stored under specific users -->
+	<utility factory=".ntiids._UGDResolver" name="Quiz" />
+
 </configure>
