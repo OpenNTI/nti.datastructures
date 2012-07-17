@@ -193,6 +193,13 @@
 			 provides=".interfaces.IGroup"
 			 name="system.Authenticated" />
 
+	<!-- FriendsLists can iterate usernames -->
+	<adapter factory=".users._FriendsListUsernameIterable" />
+	<!-- Class sections can iterate usernames -->
+	<!-- All by themselves!
+	<adapter factory=".classes._SectionUsernameIterable" />
+	-->
+
 	<!-- ACL/ACE permissions -->
 	<include file="meta.zcml" package="zope.security" />
 
@@ -244,6 +251,7 @@
 	<utility factory=".ntiids._SectionResolver" name="ClassSection" />
 	<utility factory=".ntiids._SectionResolver" name="MeetingRoom:ClassSection" />
 	<utility factory=".ntiids._ContentResolver" name="HTML" />
+	<utility factory=".ntiids._ContentResolver" name="Root" />
 	<utility factory=".ntiids._AssessmentResolver" name="NAQ" />
 	<utility factory=".ntiids._MeetingRoomResolver" name="MeetingRoom" />
 	<utility factory=".ntiids._MeetingRoomResolver" name="MeetingRoom:Group" />
