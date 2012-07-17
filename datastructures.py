@@ -866,7 +866,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 						return existing # Nothing more do do
 					# OK, so it's not contained. Is it broken?
 					if ZODB.interfaces.IBroken not in interface.providedBy( existing ):
-					  raise KeyError( "Contained object uses existing ID " + str(contained.id) )
+						__traceback_info__ = contained, existing
+						raise KeyError( "Contained object uses existing ID " + str(contained.id) )
 
 		## Save
 		if not contained.id and not self.set_ids:
