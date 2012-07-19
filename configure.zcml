@@ -224,6 +224,7 @@
 	<adapter factory=".authorization_acl._LibraryTOCEntryACLProvider" />
 	<adapter factory=".authorization_acl._FilesystemEntryACLProvider" />
 	<adapter factory=".authorization_acl._LibraryEntryACLProvider" />
+	<adapter factory=".authorization_acl._DataserverFolderACLProvider" />
 	<adapter factory=".providers._ProviderACLProvider" />
 
 	<!-- Temporary quiz adapters -->
