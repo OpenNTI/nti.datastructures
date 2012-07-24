@@ -175,8 +175,11 @@
 	<!-- Users can be principals -->
 	<adapter factory=".authorization._UserPrincipal"
 			 provides=".interfaces.IPrincipal"
-			 for=".users.User" />
-
+			 for=".interfaces.IUser" />
+	<!-- Communities can be groups -->
+	<adapter factory=".authorization._CommunityGroup"
+			 provides=".interfaces.IGroup"
+			 for=".users.Community" />
 	<!-- Allow treating arbitrary strings as IPrincipal -->
 	<adapter factory=".authorization._string_principal_factory"
 			 provides=".interfaces.IPrincipal"
