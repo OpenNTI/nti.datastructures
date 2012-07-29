@@ -629,14 +629,24 @@ class _ContainedObjectValueError(ValueError):
 	"""
 	A more naturally descriptive exception for contained objects.
 	"""
-	def __init__( self, string, contained=None ):
+	def __init__( self, string, contained=None, **kwargs ):
 		ctype = type(contained)
 		cstr = 'Unable to determine'
 		try:
 			cstr = repr(contained)
 		except Exception as e:
 			cstr = '{%s}' % e
-		super(_ContainedObjectValueError,self).__init__( "%s [type: %s repr %s]" % (string, ctype, cstr) )
+		super(_ContainedObjectValueError,self).__init__( "%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs) )
+
+def check_contained_object_for_storage( contained ):
+	if not nti_interfaces.IContained.providedBy( contained ):
+		raise _ContainedObjectValueError( "Contained object is not IContained", contained )
+	if not nti_interfaces.IZContained.providedBy( contained ):
+		raise _ContainedObjectValueError( "Contained object is not IZContained", contained )
+
+	if not getattr( contained, 'containerId' ):
+		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
+
 
 from zope.location import locate
 
@@ -844,13 +854,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		# (and would do automatically for IZContained). That results in extra objects
 		# in the database and some confusing messages. Easier to ensure that all objects
 		# meet our requirements
-		if not nti_interfaces.IContained.providedBy( contained ):
-			raise _ContainedObjectValueError( "Contained object is not IContained", contained )
-		if not nti_interfaces.IZContained.providedBy( contained ):
-			raise _ContainedObjectValueError( "Contained object is not IZContained", contained )
-
-		if not getattr( contained, 'containerId' ):
-			raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
+		check_contained_object_for_storage( contained )
 
 		container = self.getOrCreateContainer( contained.containerId )
 
@@ -1049,6 +1053,14 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 	def itervalues(self):
 		return self.containers.itervalues()
+
+	values = itervalues
+
+	def iter_all_contained_objects(self):
+		""" Only works for dict-like containers """
+		for container in self.itervalues():
+			for v in container.values():
+				yield v
 
 	def sublocations(self):
 		return (container for container in self.itervalues() if loc_interfaces.ILocation.providedBy(container))

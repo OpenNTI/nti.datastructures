@@ -27,8 +27,13 @@
 	to KeyReferences when the are Added (for purposes of zope.catalog, which we don't
 	care about, but this also
 	ensures that they have ZODB Connections, which is good).
+
+	We cannot use these subscribers as-is; see the notes in
+	intid_subscribers.py for details. Instead we have our own implementation.
 	-->
+	<exclude package="zope.intid" file="subscribers.zcml" />
 	<include package="zope.intid" />
+	<include file="intid_subscribers.zcml" />
 	<include package="zope.keyreference" />
 	<!--
 	zc.intid fires a different set of events when objects gain/lose
@@ -88,6 +93,7 @@
 
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
+	<subscriber handler=".users.user_willRemoveIntIdForContainedObject" />
 
 	<!-- Container events -->
 	<subscriber handler=".containers.update_container_modified_time" />
