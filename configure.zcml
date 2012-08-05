@@ -121,6 +121,10 @@
 		handler=".chat_transcripts._save_message_to_transcripts_subscriber"
 		/>
 
+	<adapter factory=".meeting_storage.EntityMeetingContainerAnnotation" />
+	<adapter factory=".meeting_storage.EntityMessageInfoContainerAnnotation" />
+	<adapter factory=".meeting_storage.CreatorBasedAnnotationMessageInfoStorage" />
+
 	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
 
 	<!-- Externalization -->
@@ -170,6 +174,12 @@
 	<!-- Groups and ACLs -->
 	<!-- First, make something that can store group names on the user -->
 	<class class=".users.User">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
+	<class class=".users.FriendsList">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
+	<class class=".classes.SectionInfo">
 		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
 	</class>
 	<!-- As we add more of these (rule based) we'll need to give them names -->
