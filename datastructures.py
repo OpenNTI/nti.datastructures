@@ -1063,7 +1063,10 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 				yield v
 
 	def sublocations(self):
-		return (container for container in self.itervalues() if loc_interfaces.ILocation.providedBy(container))
+		return (container for container
+				in self.itervalues()
+				# Recall that we could be holding containers given to __init__ that we are not the parent of
+				if (loc_interfaces.ILocation.providedBy(container) and container.__parent__ is self))
 
 	def __repr__( self ):
 		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
