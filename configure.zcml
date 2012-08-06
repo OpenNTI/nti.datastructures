@@ -94,6 +94,7 @@
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
 	<subscriber handler=".users.user_willRemoveIntIdForContainedObject" />
+	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
 
 	<!-- Container events -->
 	<subscriber handler=".containers.update_container_modified_time" />
