@@ -69,6 +69,10 @@
 	</configure>
 	<subscriber handler=".liking.update_last_mod_on_rated" />
 
+	<!-- Flagging -->
+	<adapter factory=".flagging.FlaggableGlobalFlagStorageFactory" />
+	<subscriber handler=".flagging._delete_flagged_object" />
+
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
 	<ext:registerMimeFactories module=".contenttypes" />
