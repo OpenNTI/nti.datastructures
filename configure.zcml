@@ -229,13 +229,16 @@
 
 	<permission
 			id="nti.actions.create"
-			title="" />
+			title="Create new object" />
 	<permission
 			id="nti.actions.delete"
-			title="" />
+			title="Delete existing object" />
 	<permission
 			id="nti.actions.update"
-			title="" />
+			title="Edit existing object" />
+	<permission
+			id="nti.actions.moderate"
+			title="Moderate existing objects" />
 
 	<!-- ACL providers -->
 	<adapter factory=".authorization_acl._EntityACLProvider" />
