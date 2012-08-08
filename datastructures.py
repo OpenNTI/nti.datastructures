@@ -9,6 +9,7 @@ import logging
 logger = logging.getLogger( __name__ )
 
 import time
+import datetime
 import collections
 import UserList
 import weakref
@@ -23,6 +24,7 @@ from zope import component
 from zope.deprecation import deprecated
 from zope.container import contained as zcontained, btree
 from zope.location import interfaces as loc_interfaces
+from zope.dublincore import interfaces as dc_interfaces
 
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
@@ -41,10 +43,7 @@ from nti.externalization.datastructures import ExternalizableDictionaryMixin, Lo
 from nti.externalization.persistence import PersistentExternalizableWeakList
 from nti.externalization.persistence import PersistentExternalizableList
 
-
 from nti.zodb.minmax import NumericMaximum as _SafeMaximum
-
-
 
 class ModDateTrackingObject(object):
 	""" Maintains an lastModified attribute containing a time.time()
@@ -176,7 +175,7 @@ class LinkNonExternalizableReplacer(object):
 	def __call__( self, link ):
 		return link
 
-
+@interface.implementer(dc_interfaces.IDCTimes)
 class CreatedModDateTrackingObject(ModDateTrackingObject):
 	""" Adds the `creator` and `createdTime` attributes. """
 	def __init__( self, *args ):
@@ -186,6 +185,14 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 		if not hasattr(self, 'creator'):
 			self.creator = None
 		self.createdTime = time.time()
+		self.updateLastModIfGreater( self.createdTime )
+
+	created = property( lambda self: datetime.datetime.fromtimestamp( self.createdTime ),
+						lambda self, dt: setattr( self, 'createdTime', time.mktime( dt.timetuple() ) ) )
+	modified = property( lambda self: datetime.datetime.fromtimestamp( self.lastModified ),
+						lambda self, dt: self.updateLastModIfGreater( time.mktime( dt.timetuple() ) ) )
+
+
 
 class PersistentCreatedModDateTrackingObject(persistent.Persistent,CreatedModDateTrackingObject):
 	pass
