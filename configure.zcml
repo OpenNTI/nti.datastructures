@@ -249,8 +249,7 @@
 	<adapter factory=".authorization_acl._EnclosedContentACLProvider" />
 	<adapter factory=".authorization_acl._FriendsListACLProvider" />
 	<adapter factory=".authorization_acl._LibraryTOCEntryACLProvider" />
-	<adapter factory=".authorization_acl._FilesystemEntryACLProvider" />
-	<adapter factory=".authorization_acl._LibraryEntryACLProvider" />
+	<adapter factory=".authorization_acl._DelimitedHierarchyEntryACLProvider" />
 	<adapter factory=".authorization_acl._DataserverFolderACLProvider" />
 	<adapter factory=".authorization_acl._ContentPackageLibraryACLProvider" />
 	<adapter factory=".providers._ProviderACLProvider" />
