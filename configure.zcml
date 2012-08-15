@@ -10,6 +10,7 @@
 	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
 	<include package="zope.security" />
+	<include package="zope.site" />
 	<include package="zope.generations" />
 	<include package="zope.generations" file="subscriber.zcml" />
 	<!-- Hashed password management. Includes zope.password -->
