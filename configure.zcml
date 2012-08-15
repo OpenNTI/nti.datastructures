@@ -179,7 +179,7 @@
 
 	<!-- Groups and ACLs -->
 	<!-- First, make something that can store group names on the user -->
-	<class class=".users.User">
+	<class class=".users.Entity">
 		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
 	</class>
 	<class class=".users.FriendsList">
