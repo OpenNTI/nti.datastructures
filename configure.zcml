@@ -92,9 +92,15 @@
 			 name="nti.dataserver"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
+	<!-- Database transactions -->
 	<utility component="._Dataserver._trivial_db_transaction_cm" />
 	<utility component="._Dataserver.run_job_in_site" />
 	<adapter factory="._Dataserver.ExternalRefResolverFactory" />
+
+	<!-- Database shards -->
+	<adapter factory=".shards.ShardLayout" />
+	<utility factory=".shards.HashedShardPlacer"
+			 name="default" />
 
 	<!-- Events -->
 	<subscriber handler=".users.user_devicefeedback" />
