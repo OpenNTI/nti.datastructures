@@ -2,6 +2,7 @@
 <configure
 	xmlns="http://namespaces.zope.org/zope"
 	xmlns:ext="http://nextthought.com/ntp/ext"
+	xmlns:zcml="http://namespaces.zope.org/zcml"
 	i18n_domain="zope">
 	<include package="zope.component" />
 	<include package="zope.location" />
@@ -11,10 +12,16 @@
 	<include package="zope.annotation" />
 	<include package="zope.security" />
 	<include package="zope.site" />
+	<include package="zope.i18n" file="meta.zcml" />
+	<include package="zope.i18n" />
 	<include package="zope.generations" />
 	<include package="zope.generations" file="subscriber.zcml" />
 	<!-- Hashed password management. Includes zope.password -->
 	<include package="z3c.bcrypt" />
+	<include package="z3c.password" />
+	<!-- Trivial password policy utility for devmode -->
+	<utility factory="z3c.password.password.TrivialPasswordUtility"
+			 zcml:condition="have devmode" />
 
 	<!-- Int ids and persistent references by identity -->
 	<!--
