@@ -84,7 +84,6 @@
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
 	<ext:registerMimeFactories module=".contenttypes" />
-	<ext:registerMimeFactories module=".users" />
 	<ext:registerMimeFactories module=".classes" />
 	<ext:registerMimeFactories module=".quizzes" />
 
@@ -93,6 +92,7 @@
 	<include package="nti.zodb" />
 	<include package="nti.contentrange" />
 	<include package="nti.contentfragments" />
+	<include package=".users" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
@@ -110,8 +110,6 @@
 			 name="default" />
 
 	<!-- Events -->
-	<subscriber handler=".users.user_devicefeedback" />
-	<subscriber handler=".users.user_willRemoveIntIdForContainedObject" />
 	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
 
 	<!-- Container events -->
@@ -150,16 +148,6 @@
 <!--	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
 			 name="wsgi" />
 -->
-	<adapter factory=".users_external._EntitySummaryExternalObject"
-			 name="summary" />
-	<adapter factory=".users_external._UserSummaryExternalObject"
-			 name="summary" />
-	<adapter factory=".users_external._UserPersonalSummaryExternalObject"
-			 name="personal-summary" />
-
-	<adapter factory=".users_external._EntityExternalObject" />
-	<adapter factory=".users_external._FriendsListExternalObject" />
-	<adapter factory=".users_external._UserExternalObject" />
 
 	<adapter factory=".activitystream_change._ChangeExternalObject" />
 
@@ -192,12 +180,6 @@
 
 	<!-- Groups and ACLs -->
 	<!-- First, make something that can store group names on the user -->
-	<class class=".users.Entity">
-		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-	</class>
-	<class class=".users.FriendsList">
-		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-	</class>
 	<class class=".classes.SectionInfo">
 		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
 	</class>
@@ -231,8 +213,6 @@
 			 provides=".interfaces.IGroup"
 			 name="system.Authenticated" />
 
-	<!-- FriendsLists can iterate usernames -->
-	<adapter factory=".users._FriendsListUsernameIterable" />
 	<!-- Class sections can iterate usernames -->
 	<!-- All by themselves!
 	<adapter factory=".classes._SectionUsernameIterable" />
