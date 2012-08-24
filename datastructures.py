@@ -906,8 +906,10 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 				the_id = to_external_ntiid_oid( contained )
 			contained.id = the_id
 
+		__traceback_info__ = container, contained.containerId, contained.id
+
 		self._v_putInContainer( container,
-								getattr(contained, StandardInternalFields.ID, None),
+								contained.id,
 								self._v_wrap( contained ),
 								contained )
 		# Synchronize the timestamps
