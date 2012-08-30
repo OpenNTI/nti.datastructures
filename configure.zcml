@@ -170,7 +170,12 @@
 -->
 	<subscriber factory=".links_external.LinkExternalObjectDecorator"
 				provides="nti.externalization.interfaces.IExternalObjectDecorator" />
-
+	<!--
+		 However, we do register it for second-pass, on the fly,
+		 rendering
+	-->
+	<adapter factory=".links_external.LinkExternal"
+			 name="second-pass" />
 
 	<!-- Finding objects by mimetype -->
 	<adapter factory=".mimetype.ModeledContentTypeMimeFactory"
