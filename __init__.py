@@ -95,8 +95,8 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 				current = getcurrent()
 				if type(current) == Greenlet \
 				  or isinstance( current, Greenlet ):
-				  self.thread = id( current )
-				  self.threadName = current._formatinfo()
+					self.thread = id( current )
+					self.threadName = current._formatinfo()
 
 	logging.LogRecord = _LogRecord
 
@@ -105,7 +105,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	del transaction
 	del threading
 	del _threading_local
-else:
+elif getattr( gevent, 'version_info', (0,) )[0] != 0:
 	logger.info( "Monkey patching minimum libraries for gevent" )
 	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
 
