@@ -831,6 +831,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		container = self.containers.get( containerId, None )
 		if container is None:
 			container = self.containerType()
+			if getattr( self, '_p_jar', None ) and hasattr( container, '_p_jar' ):
+				getattr( self, '_p_jar' ).add( container )
 			self.addContainer( containerId, container )
 		return container
 
