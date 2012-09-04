@@ -93,7 +93,12 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 			# TODO: Respect logging.logThreads?
 			if self.threadName == 'MainThread':
 				current = getcurrent()
-				if type(current) == Greenlet \
+				thread_info = getattr( current, '__thread_name__', None )
+				if thread_info:
+					self.thread = id(current)
+					self.threadName = thread_info()
+
+				elif type(current) == Greenlet \
 				  or isinstance( current, Greenlet ):
 					self.thread = id( current )
 					self.threadName = current._formatinfo()
