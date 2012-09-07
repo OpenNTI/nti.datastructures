@@ -22,7 +22,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
 	# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
 	# plus would eliminate the need to manually patch these things).
-	gevent.monkey.patch_all(thread=False,subprocess=False)
+	gevent.monkey.patch_all(thread=False,subprocess=True)
 	# The problem is that multiprocessing.queues.Queue uses a half-duplex multiprocessing.Pipe,
 	# which is implemented with os.pipe() and _multiprocessing.Connection. os.pipe isn't patched
 	# by gevent, as it returns just a fileno. _multiprocessing.Connection is an internal implementation
@@ -41,15 +41,35 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	#	return r, w
 	#os.pipe = _pipe
 
-	# Even if we don't patch threads, thread locals we MUST patch
+	# However, there is a more serious conflict. We MUST have greenlet local things like
+	# transactions. We can do that with some careful patching. But then we must have
+	# greenlet-aware locks. If we patch them as well, then the ProcessPoolExecutor fails.
+	# Basically there's a conflict between multiprocessing and greenlet locks, or Real threads
+	# and greenlet locks.
+	# So it turns out to be easier to patch the ProcessPoolExecutor to use "threads"
+	# and patch the threading system.
+	gevent.monkey.patch_thread()
+
 	import gevent.local
 	import threading
-	threading.local = gevent.local.local
+	import thread
+	from gevent import thread as green_thread
 	_threading_local = __import__('_threading_local')
-	_threading_local.local = gevent.local.local
+
+	import concurrent.futures
+	import multiprocessing
+	concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
+	def ProcessPoolExecutor( max_workers=None ):
+		if max_workers is None:
+			max_workers = multiprocessing.cpu_count()
+		return concurrent.futures.ThreadPoolExecutor( max_workers )
+	concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
 
 	# depending on the order of imports, we may need to patch
-	# some things up manually. TODO: This list is not complete.
+	# some things up manually.
+	# TODO: This list is not complete.
+	# TODO: Since these things are so critical, we might should just throw
+	# an exception and refuse to run of the import order is bad?
 	import transaction
 	if gevent.local.local not in transaction.ThreadTransactionManager.__bases__:
 		class GeventTransactionManager(transaction.TransactionManager):
