@@ -16,6 +16,10 @@
 	<include package="zope.i18n" />
 	<include package="zope.generations" />
 	<include package="zope.generations" file="subscriber.zcml" />
+	<!-- Broken objects that support annotations and locations -->
+	<exclude package="zope.app.broken" file="browser.zcml" />
+	<include package="zope.app.broken" />
+
 	<!-- Hashed password management. Includes zope.password -->
 	<include package="z3c.bcrypt" />
 	<include package="z3c.password" />
@@ -93,6 +97,7 @@
 	<include package="nti.contentrange" />
 	<include package="nti.contentfragments" />
 	<include package=".users" />
+	<include package=".utils" file="configure_bootstrap.zcml" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
