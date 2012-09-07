@@ -96,6 +96,7 @@
 	<include package="nti.zodb" />
 	<include package="nti.contentrange" />
 	<include package="nti.contentfragments" />
+	<include package="nti.mimetype" />
 	<include package=".users" />
 	<include package=".utils" file="configure_bootstrap.zcml" />
 
@@ -147,7 +148,7 @@
 	<adapter factory=".meeting_storage.EntityMessageInfoContainerAnnotation" />
 	<adapter factory=".meeting_storage.CreatorBasedAnnotationMessageInfoStorage" />
 
-	<adapter factory=".mimetype.ModeledContentTypeAwareAdapter" />
+
 
 	<!-- Externalization -->
 <!--	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
@@ -160,8 +161,6 @@
 	<subscriber factory=".datastructures.LinkDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
 	<subscriber factory=".authorization_acl.ACLDecorator"
-				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
-	<subscriber factory=".datastructures.MimeTypeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
 	<subscriber factory=".liking.LikeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
@@ -182,10 +181,6 @@
 	<adapter factory=".links_external.LinkExternal"
 			 name="second-pass" />
 
-	<!-- Finding objects by mimetype -->
-	<adapter factory=".mimetype.ModeledContentTypeMimeFactory"
-			 provides="nti.externalization.interfaces.IMimeObjectFactory"
-			 for="dolmen.builtins.IDict" />
 
 
 	<!-- Groups and ACLs -->

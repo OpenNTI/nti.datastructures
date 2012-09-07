@@ -13,16 +13,18 @@
 import logging
 logger = logging.getLogger(__name__)
 
+import sys
+
 
 import gevent
 import gevent.monkey
-if getattr( gevent, 'version_info', (0,) )[0] >= 1:
+if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules: # Don't do this when we are loaded for conflict resolution into somebody else's space
 	logger.info( "Monkey patching most libraries for gevent" )
 	# omit thread, it's required for multiprocessing futures, used in contentrendering
 	# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
 	# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
 	# plus would eliminate the need to manually patch these things).
-	gevent.monkey.patch_all(thread=False,subprocess=True)
+	gevent.monkey.patch_all(thread=False,subprocess=False)
 	# The problem is that multiprocessing.queues.Queue uses a half-duplex multiprocessing.Pipe,
 	# which is implemented with os.pipe() and _multiprocessing.Connection. os.pipe isn't patched
 	# by gevent, as it returns just a fileno. _multiprocessing.Connection is an internal implementation
@@ -48,22 +50,26 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1:
 	# and greenlet locks.
 	# So it turns out to be easier to patch the ProcessPoolExecutor to use "threads"
 	# and patch the threading system.
-	gevent.monkey.patch_thread()
+	#gevent.monkey.patch_thread()
+	# However, doing so reveals some sort of deadlock on ZODB committing that
+	# the chat integration tests can trigger.
 
 	import gevent.local
 	import threading
 	import thread
+	threading.local = gevent.local.local
 	from gevent import thread as green_thread
 	_threading_local = __import__('_threading_local')
+	_threading_local.local = gevent.local.local
 
-	import concurrent.futures
-	import multiprocessing
-	concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
-	def ProcessPoolExecutor( max_workers=None ):
-		if max_workers is None:
-			max_workers = multiprocessing.cpu_count()
-		return concurrent.futures.ThreadPoolExecutor( max_workers )
-	concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
+	# import concurrent.futures
+	# import multiprocessing
+	# concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
+	# def ProcessPoolExecutor( max_workers=None ):
+	# 	if max_workers is None:
+	# 		max_workers = multiprocessing.cpu_count()
+	# 	return concurrent.futures.ThreadPoolExecutor( max_workers )
+	# concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
 
 	# depending on the order of imports, we may need to patch
 	# some things up manually.

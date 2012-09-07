@@ -150,18 +150,6 @@ class LinkDecorator(object):
 			_links.extend( orig_links )
 			result[StandardExternalFields.LINKS] = _links
 
-@interface.implementer(ext_interfaces.IExternalMappingDecorator)
-@component.adapter(object)
-class MimeTypeDecorator(object):
-
-	def __init__( self, o ):
-		pass
-
-	def decorateExternalMapping( self, orig, result ):
-		if StandardExternalFields.CLASS in result and StandardExternalFields.MIMETYPE not in result:
-			mime_type = mimetype.nti_mimetype_from_object( orig, use_class=False )
-			if mime_type:
-				result[StandardExternalFields.MIMETYPE] = mime_type
 
 @interface.implementer(ext_interfaces.INonExternalizableReplacer)
 @component.adapter(ILink)
