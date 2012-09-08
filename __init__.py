@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 import sys
 
-
 import gevent
 import gevent.monkey
+PATCH_THREAD = True
+
 if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules: # Don't do this when we are loaded for conflict resolution into somebody else's space
 	logger.info( "Monkey patching most libraries for gevent" )
 	# omit thread, it's required for multiprocessing futures, used in contentrendering
@@ -50,26 +51,68 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 	# and greenlet locks.
 	# So it turns out to be easier to patch the ProcessPoolExecutor to use "threads"
 	# and patch the threading system.
-	#gevent.monkey.patch_thread()
-	# However, doing so reveals some sort of deadlock on ZODB committing that
-	# the chat integration tests can trigger.
-
 	import gevent.local
 	import threading
 	import thread
-	threading.local = gevent.local.local
 	from gevent import thread as green_thread
 	_threading_local = __import__('_threading_local')
-	_threading_local.local = gevent.local.local
+	if PATCH_THREAD:
+		gevent.monkey.patch_thread()
+		import concurrent.futures
+		import multiprocessing
+		concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
+		def ProcessPoolExecutor( max_workers=None ):
+			if max_workers is None:
+				max_workers = multiprocessing.cpu_count()
+			return concurrent.futures.ThreadPoolExecutor( max_workers )
+		concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
 
-	# import concurrent.futures
-	# import multiprocessing
-	# concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
-	# def ProcessPoolExecutor( max_workers=None ):
-	# 	if max_workers is None:
-	# 		max_workers = multiprocessing.cpu_count()
-	# 	return concurrent.futures.ThreadPoolExecutor( max_workers )
-	# concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
+		# Patch for try/finally missing in ZODB 3.10.5
+		def tpc_begin(self, txn, tid=None, status=' '):
+			"""Storage API: begin a transaction."""
+			if self._is_read_only:
+				raise POSException.ReadOnlyError()
+			logger.debug( "Taking tpc lock %s %s for %s", self, self._tpc_cond, txn )
+			self._tpc_cond.acquire()
+			try:
+				self._midtxn_disconnect = 0
+				while self._transaction is not None:
+					# It is allowable for a client to call two tpc_begins in a
+					# row with the same transaction, and the second of these
+					# must be ignored.
+					if self._transaction == txn:
+						raise POSException.StorageTransactionError(
+							"Duplicate tpc_begin calls for same transaction")
+
+					self._tpc_cond.wait(30)
+			finally:
+				logger.debug( "Releasing tpc lock %s %s for %s", self, self._tpc_cond, txn )
+				self._tpc_cond.release()
+
+			self._transaction = txn
+
+			try:
+				self._server.tpc_begin(id(txn), txn.user, txn.description,
+									   txn._extension, tid, status)
+			except:
+				# Client may have disconnected during the tpc_begin().
+				if self._server is not disconnected_stub:
+					self.end_transaction()
+				raise
+
+			self._tbuf.clear()
+			self._seriald.clear()
+			del self._serials[:]
+		import ZEO.ClientStorage
+		ZEO.ClientStorage.ClientStorage.tpc_begin = tpc_begin
+
+	# However, doing so reveals some sort of deadlock on ZODB committing that
+	# the chat integration tests can trigger.
+	else:
+		threading.local = gevent.local.local
+
+		_threading_local.local = gevent.local.local
+
 
 	# depending on the order of imports, we may need to patch
 	# some things up manually.
@@ -288,5 +331,5 @@ del _zapi
 del _zadapters
 del _zinterfaces
 
-del logger
+#del logger
 del logging
