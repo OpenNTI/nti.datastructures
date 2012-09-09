@@ -58,6 +58,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 	_threading_local = __import__('_threading_local')
 	if PATCH_THREAD:
 		gevent.monkey.patch_thread()
+		gevent.monkey.patch_subprocess()
 		import concurrent.futures
 		import multiprocessing
 		concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
@@ -105,6 +106,18 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 			del self._serials[:]
 		import ZEO.ClientStorage
 		ZEO.ClientStorage.ClientStorage.tpc_begin = tpc_begin
+
+
+		# The dummy-thread deletes __block, which interacts
+		# badly with forking process with subprocess: after forking,
+		# Thread.__stop is called, which throws an exception
+		orig_stop = threading.Thread._Thread__stop
+		def __stop(self):
+			if hasattr( self, '_Thread__block' ):
+				orig_stop( self )
+			else:
+				setattr( self, '_Thread__stopped', True )
+		threading.Thread._Thread__stop = __stop
 
 	# However, doing so reveals some sort of deadlock on ZODB committing that
 	# the chat integration tests can trigger.
