@@ -69,6 +69,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 		concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
 
 		# Patch for try/finally missing in ZODB 3.10.5
+		# See https://bugs.launchpad.net/zodb/+bug/1048644
 		def tpc_begin(self, txn, tid=None, status=' '):
 			"""Storage API: begin a transaction."""
 			if self._is_read_only:
