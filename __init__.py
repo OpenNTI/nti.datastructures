@@ -25,6 +25,21 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 	# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
 	# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
 	# plus would eliminate the need to manually patch these things).
+	import gevent.os
+	try:
+		logger.info( "Removing read/write patch" )
+		gevent.os.__all__.remove('read')
+		gevent.os.__all__.remove('write')
+	except ValueError:
+		# As of 1.0b4/2012-09-11, os.read and os.write are patched to
+		# operate in non-blocking mode when os is patched. Part of this non-blocking
+		# activity is to catch OSError with errno == EAGAIN, since non-blocking descriptors
+		# will raise EAGAIN when there is nothing to read. However, this breaks if the process
+		# was already expecting to do non-blocking IO and expecting to handle EAGAIN: It no longer
+		# gets these exceptions and may find itself trapped in an infinite loop. Such is the
+		# case with gunicorn.arbitrer. One symptom is that the master doesn't exit on a ^C (as signal
+		# handling is tied to reading from a non-blocking pipe).
+		logger.exception( "Failed to remove os.read/write patch. Gevent outdated?")
 	gevent.monkey.patch_all(thread=False,subprocess=False)
 	# The problem is that multiprocessing.queues.Queue uses a half-duplex multiprocessing.Pipe,
 	# which is implemented with os.pipe() and _multiprocessing.Connection. os.pipe isn't patched
