@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
+# there an issue monkey_patch breaks multiprocessingmanager
+# https://bitbucket.org/which_linden/eventlet/issue/108/monkey_patch-breaks-multiprocessingmanager
 if os.getenv("DS_SKIP_GEVENT_MONKEY_PATCHING", None) is None:
 	import gevent
 	import gevent.monkey
