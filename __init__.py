@@ -11,223 +11,225 @@
 # NOTE: 1.0 of gevent seems to fix the threading issue that cause problems with ZODB.
 # Try to confirm that
 from __future__ import print_function
+
 import logging
 logger = logging.getLogger(__name__)
 
+import os
 import sys
 
-import gevent
-import gevent.monkey
-PATCH_THREAD = True
-TRACE_GREENLETS = False
-
-if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules: # Don't do this when we are loaded for conflict resolution into somebody else's space
-	logger.info( "Monkey patching most libraries for gevent" )
-	# omit thread, it's required for multiprocessing futures, used in contentrendering
-	# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
-	# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
-	# plus would eliminate the need to manually patch these things).
-	import gevent.os
-	try:
-		logger.info( "Removing read/write patch" )
-		gevent.os.__all__.remove('read')
-		gevent.os.__all__.remove('write')
-	except ValueError:
-		# As of 1.0b4/2012-09-11, os.read and os.write are patched to
-		# operate in non-blocking mode when os is patched. Part of this non-blocking
-		# activity is to catch OSError with errno == EAGAIN, since non-blocking descriptors
-		# will raise EAGAIN when there is nothing to read. However, this breaks if the process
-		# was already expecting to do non-blocking IO and expecting to handle EAGAIN: It no longer
-		# gets these exceptions and may find itself trapped in an infinite loop. Such is the
-		# case with gunicorn.arbitrer. One symptom is that the master doesn't exit on a ^C (as signal
-		# handling is tied to reading from a non-blocking pipe).
-		logger.exception( "Failed to remove os.read/write patch. Gevent outdated?")
-	gevent.monkey.patch_all(thread=False,subprocess=False)
-	# The problem is that multiprocessing.queues.Queue uses a half-duplex multiprocessing.Pipe,
-	# which is implemented with os.pipe() and _multiprocessing.Connection. os.pipe isn't patched
-	# by gevent, as it returns just a fileno. _multiprocessing.Connection is an internal implementation
-	# class implemented in C, which exposes a 'poll(timeout)' method; under the covers, this issues a
-	# (blocking) select() call: hence the need for a real thread. Except for that method, we could
-	# almost replace Connection with gevent.fileobject.SocketAdapter, plus a trivial
-	# patch to os.pipe (below). Sigh, so close. (With a little work, we could replicate that method)
-
-	# import os
-	# import fcntl
-	# os_pipe = os.pipe
-	# def _pipe():
-	#	r, w = os_pipe()
-	#	fcntl.fcntl(r, fcntl.F_SETFL, os.O_NONBLOCK)
-	#	fcntl.fcntl(w, fcntl.F_SETFL, os.O_NONBLOCK)
-	#	return r, w
-	#os.pipe = _pipe
-
-	# However, there is a more serious conflict. We MUST have greenlet local things like
-	# transactions. We can do that with some careful patching. But then we must have
-	# greenlet-aware locks. If we patch them as well, then the ProcessPoolExecutor fails.
-	# Basically there's a conflict between multiprocessing and greenlet locks, or Real threads
-	# and greenlet locks.
-	# So it turns out to be easier to patch the ProcessPoolExecutor to use "threads"
-	# and patch the threading system.
-	import gevent.local
-	import threading
-	import thread
-	from gevent import thread as green_thread
-	_threading_local = __import__('_threading_local')
-	if PATCH_THREAD:
-		gevent.monkey.patch_thread()
-		gevent.monkey.patch_subprocess()
-		import concurrent.futures
-		import multiprocessing
-		concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
-		def ProcessPoolExecutor( max_workers=None ):
-			if max_workers is None:
-				max_workers = multiprocessing.cpu_count()
-			return concurrent.futures.ThreadPoolExecutor( max_workers )
-		concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
-
-		# Patch for try/finally missing in ZODB 3.10.5
-		# See https://bugs.launchpad.net/zodb/+bug/1048644
-		def tpc_begin(self, txn, tid=None, status=' '):
-			"""Storage API: begin a transaction."""
-			if self._is_read_only:
-				raise POSException.ReadOnlyError()
-			logger.debug( "Taking tpc lock %s %s for %s", self, self._tpc_cond, txn )
-			self._tpc_cond.acquire()
-			try:
-				self._midtxn_disconnect = 0
-				while self._transaction is not None:
-					# It is allowable for a client to call two tpc_begins in a
-					# row with the same transaction, and the second of these
-					# must be ignored.
-					if self._transaction == txn:
-						raise POSException.StorageTransactionError(
-							"Duplicate tpc_begin calls for same transaction")
-
-					self._tpc_cond.wait(30)
-			finally:
-				logger.debug( "Releasing tpc lock %s %s for %s", self, self._tpc_cond, txn )
-				self._tpc_cond.release()
-
-			self._transaction = txn
-
-			try:
-				self._server.tpc_begin(id(txn), txn.user, txn.description,
-									   txn._extension, tid, status)
-			except:
-				# Client may have disconnected during the tpc_begin().
-				if self._server is not disconnected_stub:
-					self.end_transaction()
-				raise
-
-			self._tbuf.clear()
-			self._seriald.clear()
-			del self._serials[:]
-		import ZEO.ClientStorage
-		ZEO.ClientStorage.ClientStorage.tpc_begin = tpc_begin
-
-
-		# The dummy-thread deletes __block, which interacts
-		# badly with forking process with subprocess: after forking,
-		# Thread.__stop is called, which throws an exception
-		orig_stop = threading.Thread._Thread__stop
-		def __stop(self):
-			if hasattr( self, '_Thread__block' ):
-				orig_stop( self )
-			else:
-				setattr( self, '_Thread__stopped', True )
-		threading.Thread._Thread__stop = __stop
-
-	# However, doing so reveals some sort of deadlock on ZODB committing that
-	# the chat integration tests can trigger.
+if os.getenv("DS_SKIP_GEVENT_MONKEY_PATCHING", None) is None:
+	import gevent
+	import gevent.monkey
+	PATCH_THREAD = True
+	TRACE_GREENLETS = False
+	
+	if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules: # Don't do this when we are loaded for conflict resolution into somebody else's space
+		logger.info( "Monkey patching most libraries for gevent" )
+		# omit thread, it's required for multiprocessing futures, used in contentrendering
+		# This is true even of the builds as-of 20120508 that have added a 'subprocess' module;
+		# it would be nice to fix (so we get greenlet names in the logs instead of always "MainThread",
+		# plus would eliminate the need to manually patch these things).
+		import gevent.os
+		try:
+			logger.info( "Removing read/write patch" )
+			gevent.os.__all__.remove('read')
+			gevent.os.__all__.remove('write')
+		except ValueError:
+			# As of 1.0b4/2012-09-11, os.read and os.write are patched to
+			# operate in non-blocking mode when os is patched. Part of this non-blocking
+			# activity is to catch OSError with errno == EAGAIN, since non-blocking descriptors
+			# will raise EAGAIN when there is nothing to read. However, this breaks if the process
+			# was already expecting to do non-blocking IO and expecting to handle EAGAIN: It no longer
+			# gets these exceptions and may find itself trapped in an infinite loop. Such is the
+			# case with gunicorn.arbitrer. One symptom is that the master doesn't exit on a ^C (as signal
+			# handling is tied to reading from a non-blocking pipe).
+			logger.exception( "Failed to remove os.read/write patch. Gevent outdated?")
+		gevent.monkey.patch_all(thread=False,subprocess=False)
+		# The problem is that multiprocessing.queues.Queue uses a half-duplex multiprocessing.Pipe,
+		# which is implemented with os.pipe() and _multiprocessing.Connection. os.pipe isn't patched
+		# by gevent, as it returns just a fileno. _multiprocessing.Connection is an internal implementation
+		# class implemented in C, which exposes a 'poll(timeout)' method; under the covers, this issues a
+		# (blocking) select() call: hence the need for a real thread. Except for that method, we could
+		# almost replace Connection with gevent.fileobject.SocketAdapter, plus a trivial
+		# patch to os.pipe (below). Sigh, so close. (With a little work, we could replicate that method)
+	
+		# import os
+		# import fcntl
+		# os_pipe = os.pipe
+		# def _pipe():
+		#	r, w = os_pipe()
+		#	fcntl.fcntl(r, fcntl.F_SETFL, os.O_NONBLOCK)
+		#	fcntl.fcntl(w, fcntl.F_SETFL, os.O_NONBLOCK)
+		#	return r, w
+		#os.pipe = _pipe
+	
+		# However, there is a more serious conflict. We MUST have greenlet local things like
+		# transactions. We can do that with some careful patching. But then we must have
+		# greenlet-aware locks. If we patch them as well, then the ProcessPoolExecutor fails.
+		# Basically there's a conflict between multiprocessing and greenlet locks, or Real threads
+		# and greenlet locks.
+		# So it turns out to be easier to patch the ProcessPoolExecutor to use "threads"
+		# and patch the threading system.
+		import gevent.local
+		import threading
+		import thread
+		from gevent import thread as green_thread
+		_threading_local = __import__('_threading_local')
+		if PATCH_THREAD:
+			gevent.monkey.patch_thread()
+			gevent.monkey.patch_subprocess()
+			import concurrent.futures
+			import multiprocessing
+			concurrent.futures._ProcessPoolExecutor = concurrent.futures.ProcessPoolExecutor
+			def ProcessPoolExecutor( max_workers=None ):
+				if max_workers is None:
+					max_workers = multiprocessing.cpu_count()
+				return concurrent.futures.ThreadPoolExecutor( max_workers )
+			concurrent.futures.ProcessPoolExecutor = ProcessPoolExecutor
+	
+			# Patch for try/finally missing in ZODB 3.10.5
+			# See https://bugs.launchpad.net/zodb/+bug/1048644
+			def tpc_begin(self, txn, tid=None, status=' '):
+				"""Storage API: begin a transaction."""
+				if self._is_read_only:
+					raise POSException.ReadOnlyError()
+				logger.debug( "Taking tpc lock %s %s for %s", self, self._tpc_cond, txn )
+				self._tpc_cond.acquire()
+				try:
+					self._midtxn_disconnect = 0
+					while self._transaction is not None:
+						# It is allowable for a client to call two tpc_begins in a
+						# row with the same transaction, and the second of these
+						# must be ignored.
+						if self._transaction == txn:
+							raise POSException.StorageTransactionError(
+								"Duplicate tpc_begin calls for same transaction")
+	
+						self._tpc_cond.wait(30)
+				finally:
+					logger.debug( "Releasing tpc lock %s %s for %s", self, self._tpc_cond, txn )
+					self._tpc_cond.release()
+	
+				self._transaction = txn
+	
+				try:
+					self._server.tpc_begin(id(txn), txn.user, txn.description,
+										   txn._extension, tid, status)
+				except:
+					# Client may have disconnected during the tpc_begin().
+					if self._server is not disconnected_stub:
+						self.end_transaction()
+					raise
+	
+				self._tbuf.clear()
+				self._seriald.clear()
+				del self._serials[:]
+			import ZEO.ClientStorage
+			ZEO.ClientStorage.ClientStorage.tpc_begin = tpc_begin
+	
+	
+			# The dummy-thread deletes __block, which interacts
+			# badly with forking process with subprocess: after forking,
+			# Thread.__stop is called, which throws an exception
+			orig_stop = threading.Thread._Thread__stop
+			def __stop(self):
+				if hasattr( self, '_Thread__block' ):
+					orig_stop( self )
+				else:
+					setattr( self, '_Thread__stopped', True )
+			threading.Thread._Thread__stop = __stop
+	
+		# However, doing so reveals some sort of deadlock on ZODB committing that
+		# the chat integration tests can trigger.
+		else:
+			threading.local = gevent.local.local
+	
+			_threading_local.local = gevent.local.local
+	
+	
+		# depending on the order of imports, we may need to patch
+		# some things up manually.
+		# TODO: This list is not complete.
+		# TODO: Since these things are so critical, we might should just throw
+		# an exception and refuse to run of the import order is bad?
+		import transaction
+		if gevent.local.local not in transaction.ThreadTransactionManager.__bases__:
+			class GeventTransactionManager(transaction.TransactionManager):
+				pass
+			manager = GeventTransactionManager()
+			transaction.manager = manager
+			transaction.get = transaction.__enter__ = manager.get
+			transaction.begin = manager.begin
+			transaction.commit = manager.commit
+			transaction.abort = manager.abort
+			transaction.__exit__ = manager.__exit__
+			transaction.doom = manager.doom
+			transaction.isDoomed = manager.isDoomed
+			transaction.savepoint = manager.savepoint
+			transaction.attempts = manager.attempts
+	
+		import zope.component
+		import zope.component.hooks
+		if gevent.local.local not in type(zope.component.hooks.siteinfo).__bases__:
+			# TODO: Is there a better way to do this?
+			# This code is copied from zope.component 3.12
+			class SiteInfo(threading.local):
+				site = None
+				sm = zope.component.getGlobalSiteManager()
+	
+				def adapter_hook(self):
+					adapter_hook = self.sm.adapters.adapter_hook
+					self.adapter_hook = adapter_hook
+					return adapter_hook
+	
+				adapter_hook = zope.component.hooks.read_property(adapter_hook)
+	
+			zope.component.hooks.siteinfo = SiteInfo()
+			del SiteInfo
+	
+		from logging import LogRecord
+		from gevent import getcurrent, Greenlet
+		class _LogRecord(LogRecord):
+			def __init__( self, *args, **kwargs ):
+				LogRecord.__init__( self, *args, **kwargs )
+				# TODO: Respect logging.logThreads?
+				if self.threadName == 'MainThread':
+					current = getcurrent()
+					thread_info = getattr( current, '__thread_name__', None )
+					if thread_info:
+						self.thread = id(current)
+						self.threadName = thread_info()
+	
+					elif type(current) == Greenlet \
+					  or isinstance( current, Greenlet ):
+						self.thread = id( current )
+						self.threadName = current._formatinfo()
+	
+		logging.LogRecord = _LogRecord
+	
+		if TRACE_GREENLETS:
+			import greenlet
+			def greenlet_trace( event, origin ):
+				print( "Greenlet switching from", event, "to", origin, file=sys.stderr )
+			greenlet.settrace( greenlet_trace )
+	
+		del _LogRecord
+		del zope
+		del transaction
+		del threading
+		del _threading_local
+	#elif getattr( gevent, 'version_info', (0,) )[0] != 0:
+	#	logger.info( "Monkey patching minimum libraries for gevent" )
+	#	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
 	else:
-		threading.local = gevent.local.local
-
-		_threading_local.local = gevent.local.local
-
-
-	# depending on the order of imports, we may need to patch
-	# some things up manually.
-	# TODO: This list is not complete.
-	# TODO: Since these things are so critical, we might should just throw
-	# an exception and refuse to run of the import order is bad?
-	import transaction
-	if gevent.local.local not in transaction.ThreadTransactionManager.__bases__:
-		class GeventTransactionManager(transaction.TransactionManager):
-			pass
-		manager = GeventTransactionManager()
-		transaction.manager = manager
-		transaction.get = transaction.__enter__ = manager.get
-		transaction.begin = manager.begin
-		transaction.commit = manager.commit
-		transaction.abort = manager.abort
-		transaction.__exit__ = manager.__exit__
-		transaction.doom = manager.doom
-		transaction.isDoomed = manager.isDoomed
-		transaction.savepoint = manager.savepoint
-		transaction.attempts = manager.attempts
-
-	import zope.component
-	import zope.component.hooks
-	if gevent.local.local not in type(zope.component.hooks.siteinfo).__bases__:
-		# TODO: Is there a better way to do this?
-		# This code is copied from zope.component 3.12
-		class SiteInfo(threading.local):
-			site = None
-			sm = zope.component.getGlobalSiteManager()
-
-			def adapter_hook(self):
-				adapter_hook = self.sm.adapters.adapter_hook
-				self.adapter_hook = adapter_hook
-				return adapter_hook
-
-			adapter_hook = zope.component.hooks.read_property(adapter_hook)
-
-		zope.component.hooks.siteinfo = SiteInfo()
-		del SiteInfo
-
-	from logging import LogRecord
-	from gevent import getcurrent, Greenlet
-	class _LogRecord(LogRecord):
-		def __init__( self, *args, **kwargs ):
-			LogRecord.__init__( self, *args, **kwargs )
-			# TODO: Respect logging.logThreads?
-			if self.threadName == 'MainThread':
-				current = getcurrent()
-				thread_info = getattr( current, '__thread_name__', None )
-				if thread_info:
-					self.thread = id(current)
-					self.threadName = thread_info()
-
-				elif type(current) == Greenlet \
-				  or isinstance( current, Greenlet ):
-					self.thread = id( current )
-					self.threadName = current._formatinfo()
-
-	logging.LogRecord = _LogRecord
-
-	if TRACE_GREENLETS:
-		import greenlet
-		def greenlet_trace( event, origin ):
-			print( "Greenlet switching from", event, "to", origin, file=sys.stderr )
-		greenlet.settrace( greenlet_trace )
-
-	del _LogRecord
-	del zope
-	del transaction
-	del threading
-	del _threading_local
-#elif getattr( gevent, 'version_info', (0,) )[0] != 0:
-#	logger.info( "Monkey patching minimum libraries for gevent" )
-#	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
-else:
-	logger.info( "Not monkey patching any gevent libraries" )
-
-del gevent
+		logger.info( "Not monkey patching any gevent libraries" )
+	
+	del gevent
 
 
 # Patch zope.component.hooks.site to not be broken, if necessary
 from zope.component.hooks import setSite, getSite
-
 
 def _patch_site():
 	import zope.component.hooks
