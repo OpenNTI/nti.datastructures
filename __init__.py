@@ -10,6 +10,7 @@
 # we have loaded ZODB and doesn't seem to interfere with it. See gunicorn.py.
 # NOTE: 1.0 of gevent seems to fix the threading issue that cause problems with ZODB.
 # Try to confirm that
+from __future__ import print_function
 import logging
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ import sys
 import gevent
 import gevent.monkey
 PATCH_THREAD = True
+TRACE_GREENLETS = False
 
 if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules: # Don't do this when we are loaded for conflict resolution into somebody else's space
 	logger.info( "Monkey patching most libraries for gevent" )
@@ -203,14 +205,22 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 
 	logging.LogRecord = _LogRecord
 
+	if TRACE_GREENLETS:
+		import greenlet
+		def greenlet_trace( event, origin ):
+			print( "Greenlet switching from", event, "to", origin, file=sys.stderr )
+		greenlet.settrace( greenlet_trace )
+
 	del _LogRecord
 	del zope
 	del transaction
 	del threading
 	del _threading_local
-elif getattr( gevent, 'version_info', (0,) )[0] != 0:
-	logger.info( "Monkey patching minimum libraries for gevent" )
-	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
+#elif getattr( gevent, 'version_info', (0,) )[0] != 0:
+#	logger.info( "Monkey patching minimum libraries for gevent" )
+#	gevent.monkey.patch_socket(); gevent.monkey.patch_ssl()
+else:
+	logger.info( "Not monkey patching any gevent libraries" )
 
 del gevent
 
