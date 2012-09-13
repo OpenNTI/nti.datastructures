@@ -91,7 +91,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 			"""Storage API: begin a transaction."""
 			if self._is_read_only:
 				raise POSException.ReadOnlyError()
-			logger.debug( "Taking tpc lock %s %s for %s", self, self._tpc_cond, txn )
+			#logger.debug( "Taking tpc lock %s %s for %s", self, self._tpc_cond, txn )
 			self._tpc_cond.acquire()
 			try:
 				self._midtxn_disconnect = 0
@@ -105,7 +105,7 @@ if getattr( gevent, 'version_info', (0,) )[0] >= 1 and 'ZEO' not in sys.modules:
 
 					self._tpc_cond.wait(30)
 			finally:
-				logger.debug( "Releasing tpc lock %s %s for %s", self, self._tpc_cond, txn )
+				#logger.debug( "Releasing tpc lock %s %s for %s", self, self._tpc_cond, txn )
 				self._tpc_cond.release()
 
 			self._transaction = txn
