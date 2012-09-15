@@ -87,10 +87,11 @@
 
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
-	<ext:registerMimeFactories module=".contenttypes" />
+
 	<ext:registerMimeFactories module=".classes" />
 	<ext:registerMimeFactories module=".quizzes" />
 
+	<include package=".contenttypes" />
 	<include package="nti.chatserver" />
 	<include package="nti.contentlibrary" />
 	<include package="nti.zodb" />
