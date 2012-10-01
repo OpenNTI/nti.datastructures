@@ -147,7 +147,9 @@ class LinkDecorator(object):
 				interface.alsoProvides( link, ILocation )
 				link.__name__ = ''
 				link.__parent__ = context
-			_links.extend( orig_links )
+
+		_links.extend( orig_links )
+		if _links:
 			result[StandardExternalFields.LINKS] = _links
 
 
