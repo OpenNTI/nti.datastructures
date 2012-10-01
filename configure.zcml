@@ -89,7 +89,6 @@
 	<include package="nti.externalization" />
 
 	<ext:registerMimeFactories module=".classes" />
-	<ext:registerMimeFactories module=".quizzes" />
 
 	<include package=".contenttypes" />
 	<include package="nti.chatserver" />
@@ -254,11 +253,6 @@
 	<adapter factory=".authorization_acl._DataserverFolderACLProvider" />
 	<adapter factory=".authorization_acl._ContentPackageLibraryACLProvider" />
 	<adapter factory=".providers._ProviderACLProvider" />
-
-	<!-- Temporary quiz adapters -->
-	<adapter factory="str nti.assessment.solution.QLatexSymbolicMathSolution"
-			 provides="nti.assessment.interfaces.IQLatexSymbolicMathSolution"
-			 for="nti.dataserver.quizzes.QuizQuestionAnswer"/>
 
 	<!--
 		Let annotations be stored on some objects, primarily for the
