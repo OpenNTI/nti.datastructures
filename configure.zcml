@@ -270,4 +270,7 @@
 	<!-- NTIID Resolvers -->
 	<include package="." file="configure_ntiids.zcml" />
 
+	<!-- Weak refs -->
+	<include package="." file="configure_weakrefs.zcml" />
+
 </configure>
