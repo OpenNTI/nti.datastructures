@@ -895,7 +895,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 					# Don't allow overrwriting
 					the_id = None
 			if the_id is None:
-				the_id = to_external_ntiid_oid( contained )
+				the_id = to_external_ntiid_oid( contained, add_to_intids=True )
 			contained.id = the_id
 
 		__traceback_info__ = container, contained.containerId, contained.id
