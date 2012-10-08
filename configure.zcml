@@ -8,6 +8,7 @@
 	<include package="zope.location" />
 	<include package="zope.traversing" />
 	<include package="zope.container" />
+	<include package="zope.catalog" />
 	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
 	<include package="zope.security" />
