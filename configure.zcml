@@ -213,6 +213,10 @@
 			 provides=".interfaces.IPrincipal"
 			 name="zope.security.management.system_user"
 			 for="basestring" />
+	<adapter factory=".authorization._system_user_factory"
+			 provides=".interfaces.IPrincipal"
+			 name="system"
+			 for="basestring" />
 	<adapter factory=".authorization._EveryoneGroup"
 			 provides=".interfaces.IGroup"
 			 name="system.Everyone" />
