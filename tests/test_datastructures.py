@@ -10,7 +10,7 @@ from nose.tools import assert_raises
 import collections
 
 import persistent
-
+from nti.externalization.oids import to_external_ntiid_oid
 import nti.deprecated
 
 with nti.deprecated.hiding_warnings():
@@ -208,7 +208,9 @@ class TestPersistentExternalizableWeakList(unittest.TestCase):
 
 class TestContainedStorage(mock_dataserver.ConfiguringTestBase):
 
-	class C(CreatedModDateTrackingObject,ZContainedMixin): pass
+	class C(CreatedModDateTrackingObject,ZContainedMixin):
+		def to_container_key(self):
+			return to_external_ntiid_oid( self, default_oid=str(id(self)) )
 
 	def test_idempotent_add_even_when_wrapped(self):
 		cs = ContainedStorage( weak=True )

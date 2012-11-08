@@ -899,6 +899,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 			contained.id = the_id
 
 		__traceback_info__ = container, contained.containerId, contained.id
+		if contained.id is None:
+			raise _ContainedObjectValueError( "Unable to determine contained id", contained )
 
 		self._v_putInContainer( container,
 								contained.id,
