@@ -120,6 +120,8 @@
 	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
 	<subscriber handler=".session_storage._create_sessions_for_new_user" />
 
+	<subscriber handler=".sharing.SharingSourceMixin_dynamicsharingtargetdeleted" />
+
 	<!-- Container events -->
 	<subscriber handler=".containers.update_container_modified_time" />
 	<subscriber handler=".containers.update_parent_modified_time" />
