@@ -187,7 +187,7 @@
 
 
 
-	<!-- Groups and ACLs -->
+	<!-- Groups and principals -->
 	<!-- First, make something that can store group names on the user -->
 	<class class=".classes.SectionInfo">
 		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
@@ -206,9 +206,12 @@
 	<adapter factory=".authorization._CommunityGroup"
 			 provides=".interfaces.IGroup"
 			 for=".users.Community" />
-	<!-- Allow treating arbitrary strings as IPrincipal -->
+	<!-- Allow treating arbitrary strings as IPrincipal/IGroup -->
 	<adapter factory=".authorization._string_principal_factory"
 			 provides=".interfaces.IPrincipal"
+			 for="basestring"/>
+	<adapter factory=".authorization._string_group_factory"
+			 provides=".interfaces.IGroup"
 			 for="basestring"/>
 	<!-- System users are adapted specially -->
 	<adapter factory=".authorization._system_user_factory"
@@ -226,40 +229,8 @@
 			 provides=".interfaces.IGroup"
 			 name="system.Authenticated" />
 
-	<!-- Class sections can iterate usernames -->
-	<!-- All by themselves!
-	<adapter factory=".classes._SectionUsernameIterable" />
-	-->
-
 	<!-- ACL/ACE permissions -->
-	<include file="meta.zcml" package="zope.security" />
-
-	<permission
-			id="nti.actions.create"
-			title="Create new object" />
-	<permission
-			id="nti.actions.delete"
-			title="Delete existing object" />
-	<permission
-			id="nti.actions.update"
-			title="Edit existing object" />
-	<permission
-			id="nti.actions.moderate"
-			title="Moderate existing objects" />
-
-	<!-- ACL providers -->
-	<adapter factory=".authorization_acl._EntityACLProvider" />
-	<adapter factory=".authorization_acl._CreatedACLProvider" />
-	<adapter factory=".authorization_acl._ShareableModeledContentACLProvider" />
-	<adapter factory=".authorization_acl._SectionInfoACLProvider" />
-	<adapter factory=".authorization_acl._ClassInfoACLProvider" />
-	<adapter factory=".authorization_acl._EnclosedContentACLProvider" />
-	<adapter factory=".authorization_acl._FriendsListACLProvider" />
-	<adapter factory=".authorization_acl._LibraryTOCEntryACLProvider" />
-	<adapter factory=".authorization_acl._DelimitedHierarchyEntryACLProvider" />
-	<adapter factory=".authorization_acl._DataserverFolderACLProvider" />
-	<adapter factory=".authorization_acl._ContentPackageLibraryACLProvider" />
-	<adapter factory=".providers._ProviderACLProvider" />
+	<include package="." file="configure_acls.zcml" />
 
 	<!--
 		Let annotations be stored on some objects, primarily for the
