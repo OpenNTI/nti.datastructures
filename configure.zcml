@@ -187,21 +187,28 @@
 
 
 
-	<!-- Groups and principals -->
-	<!-- First, make something that can store group names on the user -->
-	<class class=".classes.SectionInfo">
-		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-	</class>
-	<!-- As we add more of these (rule based) we'll need to give them names -->
-	<!-- TODO: Couldn't we use subscribers for this instead of names? -->
-	<adapter factory=".authorization._persistent_group_member_factory"
-			 provides=".interfaces.IGroupMember"
-			 for=".users.User" />
+	<!--
+		 Groups and principals
+	-->
 
-	<!-- Users can be principals -->
-	<adapter factory=".authorization._UserPrincipal"
+	<!--
+		 First, the primary group membership for users.
+		 All other memberships (persistent or rule-based) will
+		 need to have names. (We could use subscribers, but then we
+		 wouldn't have a default adapter.)
+	-->
+	<adapter factory=".authorization._persistent_group_member_factory"
+			 provides=".interfaces.IMutableGroupMember"
+			 for=".interfaces.IUser" />
+
+	<!-- Users can be principals and group aware principals -->
+	<adapter factory=".authorization._UserGroupAwarePrincipal"
 			 provides=".interfaces.IPrincipal"
 			 for=".interfaces.IUser" />
+	<adapter factory=".authorization._UserGroupAwarePrincipal"
+			 provides=".interfaces.IGroupAwarePrincipal"
+			 for=".interfaces.IUser" />
+
 	<!-- Communities can be groups -->
 	<adapter factory=".authorization._CommunityGroup"
 			 provides=".interfaces.IGroup"
