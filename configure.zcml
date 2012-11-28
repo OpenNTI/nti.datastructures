@@ -201,6 +201,14 @@
 			 provides=".interfaces.IMutableGroupMember"
 			 for=".interfaces.IUser" />
 
+	<!--
+		Also, a place to store content access roles.
+	-->
+	<adapter factory=".authorization._content_role_member_factory"
+			 provides=".interfaces.IMutableGroupMember"
+			 for=".interfaces.IUser"
+			 name="content-role:" />
+
 	<!-- Users can be principals and group aware principals -->
 	<adapter factory=".authorization._UserGroupAwarePrincipal"
 			 provides=".interfaces.IPrincipal"
