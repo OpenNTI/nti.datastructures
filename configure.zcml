@@ -220,6 +220,9 @@
 	<adapter factory=".authorization._string_group_factory"
 			 provides=".interfaces.IGroup"
 			 for="basestring"/>
+	<adapter factory=".authorization._string_role_factory"
+			 provides=".interfaces.IRole"
+			 for="basestring"/>
 	<!-- System users are adapted specially -->
 	<adapter factory=".authorization._system_user_factory"
 			 provides=".interfaces.IPrincipal"
