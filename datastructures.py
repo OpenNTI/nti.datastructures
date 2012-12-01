@@ -736,7 +736,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 						logger.debug( "Failed to set id", exc_info=True )
 		def _get_in_container( c, i, d=None ):
 			if isinstance( c, collections.Mapping ):
-				return c.get( i, d )
+				return c.get( i, d ) if i is not None else d # BTree containers raise TypeError on a None key
 			try:
 				return c[i]
 			except IndexError:
