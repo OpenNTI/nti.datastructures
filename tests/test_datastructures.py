@@ -24,7 +24,7 @@ with nti.deprecated.hiding_warnings():
 	from nti.externalization.oids import toExternalOID
 
 
-	from nti.tests import verifiably_provides
+	from nti.tests import validly_provides as verifiably_provides
 	import mock_dataserver
 	from nti.dataserver import contenttypes
 	from nti.dataserver import interfaces as nti_interfaces
