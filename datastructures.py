@@ -949,6 +949,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		"""
 		Given an object contained herein, removes it. Returns the removed
 			object, if found, else returns None.
+
 		:param log_level: The level at which we log if we are unable to delete
 			the object. If this is expected to be common and harmless, set it lower than DEBUG.
 		"""
