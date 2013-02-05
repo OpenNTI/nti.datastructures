@@ -1,3 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+
+
+$Id$
+"""
+
+from __future__ import print_function, unicode_literals, absolute_import
+__docformat__ = "restructuredtext en"
+
+logger = __import__('logging').getLogger(__name__)
 
 from hamcrest import (assert_that, is_, has_entry, instance_of )
 from hamcrest import  is_in, not_none, is_not, greater_than, less_than
@@ -6,6 +18,8 @@ from hamcrest import same_instance
 from hamcrest.library import has_property as has_attr
 import unittest
 from nose.tools import assert_raises
+
+from nti.tests import AbstractTestBase
 
 import collections
 
@@ -25,7 +39,7 @@ with nti.deprecated.hiding_warnings():
 
 
 	from nti.tests import validly_provides as verifiably_provides
-	import mock_dataserver
+	from . import mock_dataserver
 	from nti.dataserver import contenttypes
 	from nti.dataserver import interfaces as nti_interfaces
 	from nti.ntiids import ntiids
@@ -85,7 +99,7 @@ def test_case_key_broken_comparisons():
 	assert_that( key, is_( less_than( "l" ) ) )
 	assert_that( key, is_not( "k" ) )
 
-class TestCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
+class TestCaseInsensitiveModDateTrackingOOBTree(AbstractTestBase):
 
 	def test_get_set_contains( self ):
 		assert_that( CaseInsensitiveModDateTrackingOOBTree(), instance_of( collections.Mapping ) )
@@ -108,7 +122,7 @@ class TestCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
 		for k in cap_k:
 			assert_that( cap_k[k], is_( not_none() ) )
 
-class TestKeyPreservingCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
+class TestKeyPreservingCaseInsensitiveModDateTrackingOOBTree(AbstractTestBase):
 
 	def test_get_set_contains( self ):
 		assert_that( KeyPreservingCaseInsensitiveModDateTrackingOOBTree(), instance_of( collections.Mapping ) )
@@ -159,7 +173,7 @@ class TestKeyPreservingCaseInsensitiveModDateTrackingOOBTree(unittest.TestCase):
 		assert_that( 'k', is_in( cap_k ) )
 		assert_that( 'K', is_in( cap_k ) )
 
-class TestLastModifiedCopyingUserList(unittest.TestCase):
+class TestLastModifiedCopyingUserList(AbstractTestBase):
 
 	def test_extend( self ):
 		l = LastModifiedCopyingUserList()
@@ -185,7 +199,7 @@ class TestLastModifiedCopyingUserList(unittest.TestCase):
 		assert_that( l.lastModified, is_( 0 ) )
 		assert_that( l, is_([1,2,3]) )
 from nti.externalization.persistence import PersistentExternalizableWeakList, PersistentExternalizableList
-class TestPersistentExternalizableWeakList(unittest.TestCase):
+class TestPersistentExternalizableWeakList(AbstractTestBase):
 
 	def test_plus_extend( self ):
 		class C( persistent.Persistent ): pass
@@ -206,7 +220,7 @@ class TestPersistentExternalizableWeakList(unittest.TestCase):
 		assert_that( l, is_( [c1, c2, c3] ) )
 		assert_that( l, is_(l) )
 
-class TestContainedStorage(mock_dataserver.ConfiguringTestBase):
+class TestContainedStorage(mock_dataserver.SharedConfiguringTestBase):
 
 	class C(CreatedModDateTrackingObject,ZContainedMixin):
 		def to_container_key(self):
@@ -331,11 +345,10 @@ does_not = is_not
 
 
 from zope import interface, component
-from .mock_dataserver import ConfiguringTestBase
 from nti.externalization.interfaces import IExternalObject, IExternalObjectDecorator
 
 
-class TestToExternalObject(ConfiguringTestBase):
+class TestToExternalObject(mock_dataserver.SharedConfiguringTestBase):
 
 	def test_decorator(self):
 		class ITest(interface.Interface): pass
@@ -358,6 +371,3 @@ class TestToExternalObject(ConfiguringTestBase):
 		component.provideSubscriptionAdapter( Decorator, adapts=(ITest,) )
 
 		assert_that( toExternalObject( test ), is_( {'test': test } ) )
-
-if __name__ == '__main__':
-	unittest.main()
