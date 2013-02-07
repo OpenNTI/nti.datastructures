@@ -143,6 +143,7 @@ class LinkDecorator(object):
 		_links = [toExternalObject(l) for l in _links if l]
 		_links = [l for l in _links if l] # strip none
 		if _links:
+			_links = sorted(_links)
 			for link in _links:
 				interface.alsoProvides( link, ILocation )
 				link.__name__ = ''
