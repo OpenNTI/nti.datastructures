@@ -126,6 +126,9 @@
     <subscriber handler=".containers.update_parent_modified_time" />
     <subscriber handler=".containers.update_object_modified_time" />
 
+	<!-- Container adapters -->
+	<adapter factory=".containers.IdGeneratorNameChooser" />
+
     <!-- Chat -->
     <adapter factory=".meeting_container_storage._FriendsListAdapter" />
     <adapter factory=".meeting_container_storage._ClassSectionAdapter" />
