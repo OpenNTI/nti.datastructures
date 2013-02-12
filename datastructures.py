@@ -1078,6 +1078,10 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
+
+@interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
+						nti_interfaces.INamedContainer,
+						nti_interfaces.ILastModified )
 class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 	"""
 	A container that implements the basics of a :class:`INamedContainer` as
@@ -1092,10 +1096,6 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 	one day be deprecated.) This object will check the constraints declared
 	in the interfaces for the container and the objects.
 	"""
-
-	interface.implements( nti_interfaces.IHomogeneousTypeContainer,
-						  nti_interfaces.INamedContainer,
-						  nti_interfaces.ILastModified )
 
 	contained_type = None
 	container_name = None
@@ -1115,6 +1115,9 @@ class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
 
 deprecated('AbstractNamedContainerMap', "Prefer AbstractNamedLastModifiedBTreeContainer" )
 
+@interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
+						nti_interfaces.INamedContainer,
+						nti_interfaces.ILastModified )
 class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContainer):
 	"""
 	A container that implements the basics of a :class:`INamedContainer` as
@@ -1130,9 +1133,6 @@ class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContain
 	in the interfaces for the container and the objects.
 	"""
 
-	interface.implements( nti_interfaces.IHomogeneousTypeContainer,
-						  nti_interfaces.INamedContainer,
-						  nti_interfaces.ILastModified )
 
 	contained_type = None
 	container_name = None
