@@ -3,32 +3,32 @@
 	   xmlns:ext="http://nextthought.com/ntp/ext"
 	   xmlns:zcml="http://namespaces.zope.org/zcml"
 	   i18n_domain="zope">
-    <include package="zope.component" />
-    <include package="zope.location" />
-    <include package="zope.traversing" />
-    <include package="zope.container" />
-    <include package="zope.catalog" />
-    <include package="zope.dublincore" />
-    <include package="zope.annotation" />
-    <include package="zope.security" />
-    <include package="zope.site" />
-    <include package="zope.i18n" file="meta.zcml" />
-    <include package="zope.i18n" />
-    <include package="zope.generations" />
-    <include package="zope.generations" file="subscriber.zcml" />
-    <!-- Broken objects that support annotations and locations -->
-    <exclude package="zope.app.broken" file="browser.zcml" />
-    <include package="zope.app.broken" />
+	<include package="zope.component" />
+	<include package="zope.location" />
+	<include package="zope.traversing" />
+	<include package="zope.container" />
+	<include package="zope.catalog" />
+	<include package="zope.dublincore" />
+	<include package="zope.annotation" />
+	<include package="zope.security" />
+	<include package="zope.site" />
+	<include package="zope.i18n" file="meta.zcml" />
+	<include package="zope.i18n" />
+	<include package="zope.generations" />
+	<include package="zope.generations" file="subscriber.zcml" />
+	<!-- Broken objects that support annotations and locations -->
+	<exclude package="zope.app.broken" file="browser.zcml" />
+	<include package="zope.app.broken" />
 
-    <!-- Hashed password management. Includes zope.password -->
-    <include package="z3c.bcrypt" />
-    <include package="z3c.password" />
-    <!-- Trivial password policy utility for devmode -->
-    <utility factory="z3c.password.password.TrivialPasswordUtility"
-	     zcml:condition="have devmode" />
+	<!-- Hashed password management. Includes zope.password -->
+	<include package="z3c.bcrypt" />
+	<include package="z3c.password" />
+	<!-- Trivial password policy utility for devmode -->
+	<utility factory="z3c.password.password.TrivialPasswordUtility"
+		 zcml:condition="have devmode" />
 
-    <!-- Int ids and persistent references by identity -->
-    <!--
+	<!-- Int ids and persistent references by identity -->
+	<!--
 	If we load zope.intid, we get subscribers for the Object
 	events that ensure all ILocation objects are
 	registered/unregistered when they are added/removed, plus
@@ -42,233 +42,228 @@
 
 	We cannot use these subscribers as-is; see the notes in
 	intid_subscribers.py for details. Instead we have our own implementation.
-    -->
-    <exclude package="zope.intid" file="subscribers.zcml" />
-    <include package="zope.intid" />
-    <include file="intid_subscribers.zcml" />
-    <include package="zope.keyreference" />
-    <!--
+	-->
+	<exclude package="zope.intid" file="subscribers.zcml" />
+	<include package="zope.intid" />
+	<include file="intid_subscribers.zcml" />
+	<include package="zope.keyreference" />
+	<!--
 	zc.intid fires a different set of events when objects gain/lose
 	intids.
-    -->
-    <include package="zc.intid" />
-    <!-- This file has a bug, so we replicate its effect -->
-    <!--
+	-->
+	<include package="zc.intid" />
+	<!-- This file has a bug, so we replicate its effect -->
+	<!--
 	<include package="zc.intid" file="zope-intid.zcml" />
-    -->
-    <class class="zc.intid.utility.IntIds">
+	-->
+	<class class="zc.intid.utility.IntIds">
 	<implements interface="zope.intid.interfaces.IIntIds"/>
-    </class>
+	</class>
 
-    <!-- contentratings -->
-    <!-- It requires i18n support, but we disable its browser support -->
-    <include package="zope.i18n" file="meta.zcml" />
-    <exclude package="contentratings.browser" />
-    <include package="contentratings" />
-    <include package="contentratings" file="meta.zcml" />
-    <configure
-	xmlns:contentratings="http://namespaces.plone.org/contentratings">
-	<contentratings:category
-	    for=".interfaces.ILikeable"
-	    title="Likes"
-	    name="likes"
-	    storage=".liking._BinaryUserRatings" />
-	<contentratings:category
-	    for=".interfaces.IFavoritable"
-	    title="Favorites"
-	    name="favorites"
-	    storage=".liking._BinaryUserRatings" />
-    </configure>
-    <subscriber handler=".liking.update_last_mod_on_rated" />
+	<!-- contentratings -->
+	<!-- It requires i18n support, but we disable its browser support -->
+	<include package="zope.i18n" file="meta.zcml" />
+	<exclude package="contentratings.browser" />
+	<include package="contentratings" />
+	<include package="contentratings" file="meta.zcml" />
+	<configure xmlns:contentratings="http://namespaces.plone.org/contentratings">
+		<contentratings:category
+			for=".interfaces.ILikeable"
+			title="Likes"
+			name="likes"
+			storage=".liking._BinaryUserRatings" />
+		<contentratings:category
+			for=".interfaces.IFavoritable"
+			title="Favorites"
+			name="favorites"
+			storage=".liking._BinaryUserRatings" />
+	</configure>
+	<subscriber handler=".liking.update_last_mod_on_rated" />
 
-    <!-- Flagging -->
-    <adapter factory=".flagging.FlaggableGlobalFlagStorageFactory" />
-    <subscriber handler=".flagging._delete_flagged_object" />
+	<!-- Flagging -->
+	<adapter factory=".flagging.FlaggableGlobalFlagStorageFactory" />
+	<subscriber handler=".flagging._delete_flagged_object" />
 
-    <include package="nti.externalization" file="meta.zcml" />
-    <include package="nti.externalization" />
+	<include package="nti.externalization" file="meta.zcml" />
+	<include package="nti.externalization" />
 
-    <ext:registerMimeFactories module=".classes" />
+	<ext:registerMimeFactories module=".classes" />
 
-    <include package=".contenttypes" />
-    <include package="nti.chatserver" />
-    <include package="nti.contentlibrary" />
-    <include package="nti.zodb" />
-    <include package="nti.contentrange" />
-    <include package="nti.contentfragments" />
-    <include package="nti.mimetype" />
-    <include package=".users" />
-    <include package=".utils" file="configure_bootstrap.zcml" />
+	<include package=".contenttypes" />
+	<include package="nti.chatserver" />
+	<include package="nti.contentlibrary" />
+	<include package="nti.zodb" />
+	<include package="nti.contentrange" />
+	<include package="nti.contentfragments" />
+	<include package="nti.mimetype" />
+	<include package=".users" />
+	<include package=".utils" file="configure_bootstrap.zcml" />
 
-    <!-- Database creation and migration -->
-    <utility factory=".generations.install._DataserverSchemaManager"
-	     name="nti.dataserver"
-	     provides="zope.generations.interfaces.IInstallableSchemaManager"/>
+	<!-- Database creation and migration -->
+	<utility factory=".generations.install._DataserverSchemaManager"
+			 name="nti.dataserver"
+			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
-    <!-- Database transactions -->
-    <utility component=".site.run_job_in_site" />
-    <adapter factory="._Dataserver.ExternalRefResolverFactory" />
+	<!-- Database transactions -->
+	<utility component=".site.run_job_in_site" />
+	<adapter factory="._Dataserver.ExternalRefResolverFactory" />
 
-    <!-- Database shards -->
-    <adapter factory=".shards.ShardLayout" />
-    <utility factory=".shards.HashedShardPlacer"
-	     name="default" />
+	<!-- Database shards -->
+	<adapter factory=".shards.ShardLayout" />
+	<utility factory=".shards.HashedShardPlacer"
+			 name="default" />
 
-    <!-- Events -->
-    <subscriber handler="._Dataserver._process_did_fork_listener" />
-    <subscriber handler=".session_storage._remove_sessions_for_removed_user" />
-    <subscriber handler=".session_storage._create_sessions_for_new_user" />
+	<!-- Events -->
+	<subscriber handler="._Dataserver._process_did_fork_listener" />
+	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
+	<subscriber handler=".session_storage._create_sessions_for_new_user" />
 
-    <subscriber handler=".sharing.SharingSourceMixin_dynamicsharingtargetdeleted" />
+	<subscriber handler=".sharing.SharingSourceMixin_dynamicsharingtargetdeleted" />
 
-    <!-- Container events -->
-    <subscriber handler=".containers.update_container_modified_time" />
-    <subscriber handler=".containers.update_parent_modified_time" />
-    <subscriber handler=".containers.update_object_modified_time" />
+	<!-- Container events -->
+	<subscriber handler=".containers.update_container_modified_time" />
+	<subscriber handler=".containers.update_parent_modified_time" />
+	<subscriber handler=".containers.update_object_modified_time" />
 
 	<!-- Container adapters -->
 	<adapter factory=".containers.IdGeneratorNameChooser" />
 
-    <!-- Chat -->
-    <adapter factory=".meeting_container_storage._FriendsListAdapter" />
-    <adapter factory=".meeting_container_storage._ClassSectionAdapter" />
-    <adapter factory=".chat_transcripts._UserTranscriptStorageAdapter"
-	     />
-    <adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
-	     provides=".interfaces.ITranscriptSummary" />
+	<!-- Chat -->
+	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
+	<adapter factory=".meeting_container_storage._ClassSectionAdapter" />
+	<adapter factory=".chat_transcripts._UserTranscriptStorageAdapter" />
+	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
+			 provides=".interfaces.ITranscriptSummary" />
 
-    <adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
-	     provides="nti.externalization.interfaces.IInternalObjectIO" />
-    <adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
-	     provides="nti.externalization.interfaces.IInternalObjectIO"
-	     name="wsgi"/> <!-- TODO: Not used anymore? -->
+	<adapter factory=".chat_transcripts._MeetingTranscriptStorageExternalObjectAdapter"
+			 provides="nti.externalization.interfaces.IInternalObjectIO" />
+	<adapter factory=".chat_transcripts.TranscriptSummaryInternalObjectIO"
+			 provides="nti.externalization.interfaces.IInternalObjectIO" />
 
-    <adapter factory=".chat_transcripts.Transcript"
-	     for=".chat_transcripts._IMeetingTranscriptStorage"
-	     provides=".interfaces.ITranscript" />
-    <subscriber
-	handler=".chat_transcripts._save_message_to_transcripts_subscriber"
-	/>
+	<adapter factory=".chat_transcripts.Transcript"
+			 for=".chat_transcripts._IMeetingTranscriptStorage"
+			 provides=".interfaces.ITranscript" />
+	<subscriber handler=".chat_transcripts._save_message_to_transcripts_subscriber" />
 
-    <adapter factory=".meeting_storage.EntityMeetingContainerAnnotation" />
-    <adapter factory=".meeting_storage.EntityMessageInfoContainerAnnotation" />
-    <adapter factory=".meeting_storage.CreatorBasedAnnotationMessageInfoStorage" />
+	<adapter factory=".meeting_storage.EntityMeetingContainerAnnotation" />
+	<adapter factory=".meeting_storage.EntityMessageInfoContainerAnnotation" />
+	<adapter factory=".meeting_storage.CreatorBasedAnnotationMessageInfoStorage" />
 
 
 
-    <!-- Externalization -->
-    <!--	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
+	<!-- Externalization -->
+	<!--	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
 	name="wsgi" />
-    -->
+	-->
 
-    <adapter factory=".activitystream_change._ChangeExternalObject" />
+	<adapter factory=".activitystream_change._ChangeExternalObject" />
 
 
-    <subscriber factory=".datastructures.LinkDecorator"
-		provides="nti.externalization.interfaces.IExternalMappingDecorator" />
-    <subscriber factory=".authorization_acl.ACLDecorator"
-		provides="nti.externalization.interfaces.IExternalMappingDecorator" />
-    <subscriber factory=".liking.LikeDecorator"
-		provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
-    <adapter factory=".datastructures.LinkNonExternalizableReplacer" />
-    <!--
+	<subscriber factory=".datastructures.LinkDecorator"
+				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
+	<subscriber factory=".authorization_acl.ACLDecorator"
+				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
+	<subscriber factory=".liking.LikeDecorator"
+				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
+	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
+	<!--
 	It breaks fewer test cases to let these pass right on through with
 	the LinkNonExternalizableReplacer...they like to get the .target
 	and .rel attributes. So we count on fixing things up with the
 	LinkExternalObjectDecorator registered next
 	<adapter factory=".links_external.LinkExternal" />
-    -->
-    <subscriber factory=".links_external.LinkExternalObjectDecorator"
-		provides="nti.externalization.interfaces.IExternalObjectDecorator" />
-    <!--
+	-->
+	<subscriber factory=".links_external.LinkExternalObjectDecorator"
+				provides="nti.externalization.interfaces.IExternalObjectDecorator" />
+	<!--
 	However, we do register it for second-pass, on the fly,
 	rendering
-    -->
-    <adapter factory=".links_external.LinkExternal"
-	     name="second-pass" />
+	-->
+	<adapter factory=".links_external.LinkExternal"
+			 name="second-pass" />
 
 
 
-    <!--
+	<!--
 	Groups and principals
-    -->
+	-->
 
-    <!--
+	<!--
 	First, the primary group membership for users.
 	All other memberships (persistent or rule-based) will
 	need to have names. (We could use subscribers, but then we
 	wouldn't have a default adapter.)
-    -->
-    <adapter factory=".authorization._persistent_group_member_factory"
-	     provides=".interfaces.IMutableGroupMember"
-	     for=".interfaces.IUser" />
+	-->
+	<adapter factory=".authorization._persistent_group_member_factory"
+			 provides=".interfaces.IMutableGroupMember"
+			 for=".interfaces.IUser" />
 
-    <!--
+	<!--
 	Also, a place to store content access roles.
-    -->
-    <adapter factory=".authorization._content_role_member_factory"
-	     provides=".interfaces.IMutableGroupMember"
-	     for=".interfaces.IUser"
-	     name="content-role:" />
+	-->
+	<adapter factory=".authorization._content_role_member_factory"
+			 provides=".interfaces.IMutableGroupMember"
+			 for=".interfaces.IUser"
+			 name="content-role:" />
 
-    <!-- Users can be principals and group aware principals -->
-    <adapter factory=".authorization._UserGroupAwarePrincipal"
-	     provides=".interfaces.IPrincipal"
-	     for=".interfaces.IUser" />
-    <adapter factory=".authorization._UserGroupAwarePrincipal"
-	     provides=".interfaces.IGroupAwarePrincipal"
-	     for=".interfaces.IUser" />
+	<!-- Users can be principals and group aware principals -->
+	<adapter factory=".authorization._UserGroupAwarePrincipal"
+			 provides=".interfaces.IPrincipal"
+			 for=".interfaces.IUser" />
+	<adapter factory=".authorization._UserGroupAwarePrincipal"
+			 provides=".interfaces.IGroupAwarePrincipal"
+			 for=".interfaces.IUser" />
 
-    <!-- Communities can be groups -->
-    <adapter factory=".authorization._CommunityGroup"
-	     provides=".interfaces.IGroup"
-	     for=".users.Community" />
-    <!-- Allow treating arbitrary strings as IPrincipal/IGroup -->
-    <adapter factory=".authorization._string_principal_factory"
-	     provides=".interfaces.IPrincipal"
-	     for="basestring"/>
-    <adapter factory=".authorization._string_group_factory"
-	     provides=".interfaces.IGroup"
-	     for="basestring"/>
-    <adapter factory=".authorization._string_role_factory"
-	     provides=".interfaces.IRole"
-	     for="basestring"/>
-    <!-- System users are adapted specially -->
-    <adapter factory=".authorization._system_user_factory"
-	     provides=".interfaces.IPrincipal"
-	     name="zope.security.management.system_user"
-	     for="basestring" />
-    <adapter factory=".authorization._system_user_factory"
-	     provides=".interfaces.IPrincipal"
-	     name="system"
-	     for="basestring" />
-    <adapter factory=".authorization._EveryoneGroup"
-	     provides=".interfaces.IGroup"
-	     name="system.Everyone" />
-    <adapter factory=".authorization._AuthenticatedGroup"
-	     provides=".interfaces.IGroup"
-	     name="system.Authenticated" />
+	<!-- Communities can be groups -->
+	<adapter factory=".authorization._CommunityGroup"
+			 provides=".interfaces.IGroup"
+			 for=".users.Community" />
+	<!-- Allow treating arbitrary strings as IPrincipal/IGroup -->
+	<adapter factory=".authorization._string_principal_factory"
+			 provides=".interfaces.IPrincipal"
+			 for="basestring"/>
+	<adapter factory=".authorization._string_group_factory"
+			 provides=".interfaces.IGroup"
+			 for="basestring"/>
+	<adapter factory=".authorization._string_role_factory"
+			 provides=".interfaces.IRole"
+			 for="basestring"/>
+	<!-- System users are adapted specially -->
+	<adapter factory=".authorization._system_user_factory"
+			 provides=".interfaces.IPrincipal"
+			 name="zope.security.management.system_user"
+			 for="basestring" />
+	<adapter factory=".authorization._system_user_factory"
+			 provides=".interfaces.IPrincipal"
+			 name="system"
+			 for="basestring" />
+	<adapter factory=".authorization._EveryoneGroup"
+			 provides=".interfaces.IGroup"
+			 name="system.Everyone" />
+	<adapter factory=".authorization._AuthenticatedGroup"
+			 provides=".interfaces.IGroup"
+			 name="system.Authenticated" />
 
-    <!-- ACL/ACE permissions -->
-    <include package="." file="configure_acls.zcml" />
+	<!-- ACL/ACE permissions -->
+	<include package="." file="configure_acls.zcml" />
 
-    <!--
+	<!--
 	Let annotations be stored on some objects, primarily for the
 	purpose of getting created and last modified information
 	through dublincore.
-    -->
-    <class class="nti.assessment.assessed.QAssessedQuestion">
-	<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-    </class>
+	-->
+	<class class="nti.assessment.assessed.QAssessedQuestion">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
 
-    <class class="nti.assessment.assessed.QAssessedQuestionSet">
-	<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-    </class>
+	<class class="nti.assessment.assessed.QAssessedQuestionSet">
+		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
+	</class>
 
-    <!-- NTIID Resolvers -->
-    <include package="." file="configure_ntiids.zcml" />
+	<!-- NTIID Resolvers -->
+	<include package="." file="configure_ntiids.zcml" />
 
-    <!-- Weak refs -->
-    <include package="." file="configure_weakrefs.zcml" />
+	<!-- Weak refs -->
+	<include package="." file="configure_weakrefs.zcml" />
 
 </configure>
