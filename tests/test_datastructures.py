@@ -292,7 +292,7 @@ class TestContainedStorage(mock_dataserver.SharedConfiguringTestBase):
 	def test_delete_contained_updates_lm( self ):
 		cs = ContainedStorage( containerType=PersistentExternalizableList )
 		obj = self.C()
-		obj.containerId = 'foo'
+		obj.containerId = u'foo'
 		cs.addContainedObject( obj )
 		lm_add = cs.lastModified
 		assert_that( cs.lastModified, is_not( 0 ) )

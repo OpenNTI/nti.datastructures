@@ -25,10 +25,10 @@ from zope.deprecation import deprecated
 from zope.container import contained as zcontained, btree
 from zope.location import interfaces as loc_interfaces
 from zope.dublincore import interfaces as dc_interfaces
-
+from zope.schema.fieldproperty import FieldProperty
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
-                         ILink,	 ILocation)
+                         ILink)
 from . import links
 
 from . import mimetype
@@ -145,7 +145,7 @@ class LinkDecorator(object):
 		if _links:
 			_links = sorted(_links)
 			for link in _links:
-				interface.alsoProvides( link, ILocation )
+				interface.alsoProvides( link, loc_interfaces.ILocation )
 				link.__name__ = ''
 				link.__parent__ = context
 
@@ -532,54 +532,46 @@ class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,Created
 		self.updateLastMod()
 		return rtn
 
+class _UnicodeConvertingFieldProperty(FieldProperty):
+	"""
+	Accepts bytes input for the unicode property if it can be
+	decoded as UTF-8. This is primarily to support legacy test cases
+	and should be removed when all constants are unicode.
+	"""
 
-class IDItemMixin(object):
-	def __init__(self):
-		super(IDItemMixin,self).__init__()
-		self.id = None
+	def __set__( self, inst, value ):
+		if value and not isinstance(value, unicode):
+			value = value.decode('utf-8')
+		super(_UnicodeConvertingFieldProperty,self).__set__( inst, value )
 
-	def __setitem__(self, key, value ):
-		if key == StandardExternalFields.ID:
-			self.id = value
-		else:
-			super(IDItemMixin,self).__setitem__(key,value)
-
-	def __getitem__(self, key):
-		if key == StandardExternalFields.ID: return self.id
-		return super(IDItemMixin,self).__getitem__(key)
-
-class ContainedMixin(object):
+@interface.implementer(nti_interfaces.IContained)
+class _ContainedMixin(zcontained.Contained):
 	"""
 	Defines something that can be logically contained inside another unit
 	by reference. Two properties are defined, id and containerId.
-
-	NOTE: See the interface definitions. For now, this is *not* the same as
-	`nti_interfaces.IZContained`. Your objects should probably also either
-	implement that interface, or extend `ZContainedMixins.`
 	"""
 
-	interface.implements( nti_interfaces.IContained )
+	# It is safe to use these properties in persistent objects because
+	# they read/write to the __dict__ with the same name as the field,
+	# and setattr on the persistent object is what set _p_changed, so
+	# assigning to them still changes the object correctly
+	containerId = _UnicodeConvertingFieldProperty(nti_interfaces.IContained['containerId'])
+	id = _UnicodeConvertingFieldProperty(nti_interfaces.IContained['id'])
 
-	# In case, through the vagaries of multiple inheritance, the initializer
-	# doesn't get called, define these attributes anyway
-	containerId = None
-	id = None
+	# __name__ is NOT automatically defined as an id alias, because that could lose
+	# access to existing data that has a __name__ in its instance dict
 
 	def __init__(self, containerId=None, containedId=None):
-		super(ContainedMixin,self).__init__()
+		super(_ContainedMixin,self).__init__()
 		if containerId is not None:
 			self.containerId = containerId
 		if containedId is not None:
 			self.id = containedId
 
-class ZContainedMixin(ContainedMixin,zcontained.Contained):
-	"""
-	Something that is both `nti_interfaces.IContained` and `nti_interfaces.IZContained`.
-	"""
+ContainedMixin = ZContainedMixin = _ContainedMixin
 
-
+@interface.implementer( nti_interfaces.ILastModified )
 class ModDateTrackingBTreeContainer(btree.BTreeContainer):
-	interface.implements( nti_interfaces.ILastModified )
 
 	def __init__( self ):
 		super(ModDateTrackingBTreeContainer,self).__init__()
@@ -667,6 +659,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	__parent__ = None
 	__name__ = None
 
+	# TODO: Remove the containerType argument; nothing except tests uses it now, everything else uses the standard type.
+	# That will let us remove the complicated code to do different things based on the type of container.
 	def __init__( self, weak=False, create=False, containers=None, containerType=container.LastModifiedBTreeContainer,
 				  set_ids=True, containersType=BTrees.OOBTree.OOBTree):
 		"""
@@ -732,14 +726,14 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 				c.append( d )
 				if self.set_ids:
 					try:
-						setattr( orig, StandardInternalFields.ID, len(c) - 1 )
+						setattr( orig, StandardInternalFields.ID, unicode(len(c) - 1) )
 					except AttributeError:
 						logger.debug( "Failed to set id", exc_info=True )
 		def _get_in_container( c, i, d=None ):
 			if isinstance( c, collections.Mapping ):
 				return c.get( i, d ) if i is not None else d # BTree containers raise TypeError on a None key
 			try:
-				return c[i]
+				return c[int(i)]
 			except IndexError:
 				return d
 		def _remove_in_container( c, d ):
