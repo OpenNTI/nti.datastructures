@@ -169,14 +169,16 @@ class LinkNonExternalizableReplacer(object):
 @interface.implementer(dc_interfaces.IDCTimes)
 class CreatedModDateTrackingObject(ModDateTrackingObject):
 	""" Adds the `creator` and `createdTime` attributes. """
-	def __init__( self, *args ):
-		super(CreatedModDateTrackingObject,self).__init__( *args )
+	def __init__( self, *args, **kwargs ):
+		self.createdTime = time.time()
+		self.updateLastModIfGreater( self.createdTime )
+
+		super(CreatedModDateTrackingObject,self).__init__( *args, **kwargs )
+
 		# Some of our subclasses have class attributes for fixed creators.
 		# don't override those unless we have to
 		if not hasattr(self, 'creator'):
 			self.creator = None
-		self.createdTime = time.time()
-		self.updateLastModIfGreater( self.createdTime )
 
 	created = property( lambda self: datetime.datetime.fromtimestamp( self.createdTime ),
 						lambda self, dt: setattr( self, 'createdTime', time.mktime( dt.timetuple() ) ) )
@@ -561,8 +563,10 @@ class _ContainedMixin(zcontained.Contained):
 	# __name__ is NOT automatically defined as an id alias, because that could lose
 	# access to existing data that has a __name__ in its instance dict
 
-	def __init__(self, containerId=None, containedId=None):
-		super(_ContainedMixin,self).__init__()
+	def __init__(self, *args, **kwargs ):
+		containerId = kwargs.pop( 'containerId', None )
+		containedId = kwargs.pop( 'containedId', None )
+		super(_ContainedMixin,self).__init__(*args, **kwargs)
 		if containerId is not None:
 			self.containerId = containerId
 		if containedId is not None:
