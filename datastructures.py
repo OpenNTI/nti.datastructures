@@ -665,7 +665,7 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 
 	# TODO: Remove the containerType argument; nothing except tests uses it now, everything else uses the standard type.
 	# That will let us remove the complicated code to do different things based on the type of container.
-	def __init__( self, weak=False, create=False, containers=None, containerType=container.LastModifiedBTreeContainer,
+	def __init__( self, weak=False, create=False, containers=None, containerType=container.CheckingLastModifiedBTreeContainer,
 				  set_ids=True, containersType=BTrees.OOBTree.OOBTree):
 		"""
 		Creates a new container.
