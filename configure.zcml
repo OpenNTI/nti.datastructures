@@ -124,7 +124,7 @@
 	<subscriber handler=".containers.update_container_modified_time" />
 	<subscriber handler=".containers.update_parent_modified_time" />
 	<subscriber handler=".containers.update_object_modified_time" />
-
+	<subscriber handler=".containers.contain_nested_objects" />
 	<!-- Container adapters -->
 	<adapter factory=".containers.IdGeneratorNameChooser" />
 
