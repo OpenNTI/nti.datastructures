@@ -534,17 +534,7 @@ class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,Created
 		self.updateLastMod()
 		return rtn
 
-class _UnicodeConvertingFieldProperty(FieldProperty):
-	"""
-	Accepts bytes input for the unicode property if it can be
-	decoded as UTF-8. This is primarily to support legacy test cases
-	and should be removed when all constants are unicode.
-	"""
-
-	def __set__( self, inst, value ):
-		if value and not isinstance(value, unicode):
-			value = value.decode('utf-8')
-		super(_UnicodeConvertingFieldProperty,self).__set__( inst, value )
+from nti.utils.schema import UnicodeConvertingFieldProperty
 
 @interface.implementer(nti_interfaces.IContained)
 class _ContainedMixin(zcontained.Contained):
@@ -557,8 +547,8 @@ class _ContainedMixin(zcontained.Contained):
 	# they read/write to the __dict__ with the same name as the field,
 	# and setattr on the persistent object is what set _p_changed, so
 	# assigning to them still changes the object correctly
-	containerId = _UnicodeConvertingFieldProperty(nti_interfaces.IContained['containerId'])
-	id = _UnicodeConvertingFieldProperty(nti_interfaces.IContained['id'])
+	containerId = UnicodeConvertingFieldProperty(nti_interfaces.IContained['containerId'])
+	id = UnicodeConvertingFieldProperty(nti_interfaces.IContained['id'])
 
 	# __name__ is NOT automatically defined as an id alias, because that could lose
 	# access to existing data that has a __name__ in its instance dict
