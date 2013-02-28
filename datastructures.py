@@ -632,7 +632,7 @@ def check_contained_object_for_storage( contained ):
 		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
 
 
-from zope.location import locate
+from zope.location import locate as loc_locate
 
 @interface.implementer(nti_interfaces.IZContained, loc_interfaces.ISublocations)
 class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
@@ -780,10 +780,15 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 				and self not in getattr( self._p_jar, '_added', () ):
 				getattr( self._p_jar, '_registered_objects' ).remove( self )
 
-	def addContainer( self, containerId, container ):
+	def addContainer( self, containerId, container, locate=True ):
 		"""
 		Adds a container using the given containerId, if one does not already
 		exist.
+
+		:keyword bool locate: If ``True`` (the default), then the given container
+			object will be located as a named child of this object. (Assuming
+			it provides :class:`.ILocation`).
+
 		:raises: ValueError If a container already exists.
 		:raises: TypeError If container or id is None.
 		"""
@@ -792,8 +797,8 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		if container is None or containerId is None:
 			raise TypeError( 'Container/Id cannot be None' )
 		self.containers[containerId] = container
-		if loc_interfaces.ILocation.providedBy( container ):
-			locate( container, self, containerId )
+		if locate and loc_interfaces.ILocation.providedBy( container ):
+			loc_locate( container, self, containerId )
 
 	def deleteContainer( self, containerId ):
 		"""
@@ -801,6 +806,13 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 		:raises: KeyError If no container exists.
 		"""
 		del self.containers[containerId]
+
+	def getContainer( self, containerId, defaultValue=None ):
+		""" Given a container ID, returns the existing container, or
+		the default value if there is no container. The returned
+		value SHOULD NOT be modified. """
+		# FIXME: handle unwrapping of the contained objects
+		return self.containers.get( containerId, defaultValue )
 
 	def getOrCreateContainer( self, containerId ):
 		"""
@@ -1025,12 +1037,6 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 	def afterGetContainedObject( self, o ):
 		self._v_afterGet = o
 
-	def getContainer( self, containerId, defaultValue=None ):
-		""" Given a container ID, returns the existing container, or
-		the default value if there is no container. The returned
-		value SHOULD NOT be modified. """
-		# FIXME: handle unwrapping.
-		return self.containers.get( containerId, defaultValue )
 
 	def __iter__(self):
 		return iter(self.containers)
