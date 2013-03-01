@@ -11,6 +11,7 @@
 	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
 	<include package="zope.security" />
+	<include package="zope.vocabularyregistry" />
 	<include package="zope.site" />
 	<include package="zope.i18n" file="meta.zcml" />
 	<include package="zope.i18n" />
