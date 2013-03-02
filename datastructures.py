@@ -42,6 +42,7 @@ from nti.externalization.externalization import toExternalObject
 from nti.externalization.datastructures import ExternalizableDictionaryMixin, LocatedExternalList, LocatedExternalDict
 from nti.externalization.persistence import PersistentExternalizableWeakList
 from nti.externalization.persistence import PersistentExternalizableList
+from nti.externalization.singleton import SingletonDecorator
 
 from nti.zodb.minmax import NumericMaximum as _SafeMaximum
 
@@ -132,8 +133,7 @@ def find_links( self ):
 @component.adapter(object)
 class LinkDecorator(object):
 
-	def __init__( self, o ):
-		pass
+	__metaclass__ = SingletonDecorator
 
 	def decorateExternalMapping( self, context, result ):
 		# We have no way to know what order these will be
