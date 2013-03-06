@@ -28,6 +28,8 @@
 	<utility factory="z3c.password.password.TrivialPasswordUtility"
 		 zcml:condition="have devmode" />
 
+	<include package="nti.wref" />
+
 	<!-- Int ids and persistent references by identity -->
 	<!--
 	If we load zope.intid, we get subscribers for the Object
@@ -42,11 +44,12 @@
 	ensures that they have ZODB Connections, which is good).
 
 	We cannot use these subscribers as-is; see the notes in
-	intid_subscribers.py for details. Instead we have our own implementation.
+	subscribers.py for details. Instead we have our own implementation.
 	-->
 	<exclude package="zope.intid" file="subscribers.zcml" />
 	<include package="zope.intid" />
-	<include file="intid_subscribers.zcml" />
+	<include package="nti.intid" />
+	<include package="nti.intid" file="subscribers.zcml" />
 	<include package="zope.keyreference" />
 	<!--
 	zc.intid fires a different set of events when objects gain/lose
@@ -58,7 +61,7 @@
 	<include package="zc.intid" file="zope-intid.zcml" />
 	-->
 	<class class="zc.intid.utility.IntIds">
-	<implements interface="zope.intid.interfaces.IIntIds"/>
+		<implements interface="zope.intid.interfaces.IIntIds"/>
 	</class>
 
 	<!-- contentratings -->
