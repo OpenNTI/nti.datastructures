@@ -478,7 +478,7 @@ class ModDateTrackingPersistentMapping(ModDateTrackingMappingMixin, persistent.m
 CreatedModDateTrackingPersistentMapping = ModDateTrackingPersistentMapping
 
 
-class LastModifiedCopyingUserList(ModDateTrackingObject,UserList.UserList):
+class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	""" For building up a sequence of lists, keeps the max last modified. """
 	def extend( self, other ):
 		super(LastModifiedCopyingUserList,self).extend( other )
@@ -489,8 +489,8 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,UserList.UserList):
 		self.updateLastModIfGreater( getattr( other, 'lastModified', self.lastModified ) )
 		return result
 
-	def toExternalObject(self):
-		return self.data
+	def __reduce__( self ):
+		raise TypeError("Transient object.")
 
 from persistent.wref import WeakRef
 # WTF we doing here?
