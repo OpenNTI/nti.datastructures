@@ -1,12 +1,16 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Datatypes and datatype handling.
-$Revision$
+
+$Id$
 """
 
+from __future__ import print_function, unicode_literals, absolute_import
+__docformat__ = "restructuredtext en"
 
 import logging
-logger = logging.getLogger( __name__ )
+logger = logging.getLogger(__name__)
 
 import time
 import datetime
@@ -624,9 +628,9 @@ class _ContainedObjectValueError(ValueError):
 
 def check_contained_object_for_storage( contained ):
 	if not nti_interfaces.IContained.providedBy( contained ):
-		raise _ContainedObjectValueError( "Contained object is not IContained", contained )
+		raise _ContainedObjectValueError( "Contained object is not " + str(nti_interfaces.IContained), contained )
 	if not nti_interfaces.IZContained.providedBy( contained ):
-		raise _ContainedObjectValueError( "Contained object is not IZContained", contained )
+		raise _ContainedObjectValueError( "Contained object is not " + str(nti_interfaces.IZContained), contained )
 
 	if not getattr( contained, 'containerId' ):
 		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
