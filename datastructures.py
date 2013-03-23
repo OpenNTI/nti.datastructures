@@ -346,6 +346,9 @@ class _CaseInsensitiveKey(object):
 		except AttributeError:
 			return NotImplemented
 
+	def __hash__(self):
+		return hash(self._lower_key)
+
 	### NOTE: This class is slightly broken for ordering comparisons.
 	# We allow comparing ourself to string (and only strings)
 	# instead of return NotImplemented. This is not right, because
