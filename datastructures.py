@@ -982,11 +982,14 @@ class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
 			logger.log( log_level, "Failed to find object to delete equal to %s", contained )
 			return None
 		except TypeError:
+			logger.log( log_level, "Failed to find object to delete equal to %s", contained, exc_info=True )
 			# Getting here means that we are no longer able to resolve
 			# at least one object by OID. Might as well take this opportunity
 			# to clear out all the dangling refs. Notice we keep the identical
 			# container object though
 			# FIXME: This code only works when we're using list containers.
+			if isinstance( container, collections.Mapping ):
+				raise
 			cid = getattr( contained, '_p_oid', self ) or self
 			tmp = list( container )
 			del container[:]

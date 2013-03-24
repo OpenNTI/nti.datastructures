@@ -102,6 +102,7 @@
 	<include package="nti.mimetype" />
 	<include package=".users" />
 	<include package=".utils" file="configure_bootstrap.zcml" />
+	<include package="." file="configure_stream.zcml" />
 
 	<!-- Database creation and migration -->
 	<utility factory=".generations.install._DataserverSchemaManager"
@@ -157,10 +158,8 @@
 
 	<!-- Externalization -->
 	<!--	<adapter factory=".links.NoOpLinkExternalObjectAdapter"
-	name="wsgi" />
+		name="wsgi" />
 	-->
-
-	<adapter factory=".activitystream_change._ChangeExternalObject" />
 
 
 	<subscriber factory=".datastructures.LinkDecorator"
