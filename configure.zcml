@@ -252,19 +252,6 @@
 	<!-- ACL/ACE permissions -->
 	<include package="." file="configure_acls.zcml" />
 
-	<!--
-	Let annotations be stored on some objects, primarily for the
-	purpose of getting created and last modified information
-	through dublincore.
-	-->
-	<class class="nti.assessment.assessed.QAssessedQuestion">
-		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-	</class>
-
-	<class class="nti.assessment.assessed.QAssessedQuestionSet">
-		<implements interface="zope.annotation.interfaces.IAttributeAnnotatable" />
-	</class>
-
 	<!-- NTIID Resolvers -->
 	<include package="." file="configure_ntiids.zcml" />
 
