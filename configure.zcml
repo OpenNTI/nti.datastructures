@@ -87,6 +87,12 @@
 	<!-- Flagging -->
 	<adapter factory=".flagging.FlaggableGlobalFlagStorageFactory" />
 	<subscriber handler=".flagging._delete_flagged_object" />
+	<!--
+		 We reuse the rated modification time updater for flagging too; if we don't update mod times
+		 on flagging events, caching is really hard.
+	-->
+	<subscriber handler=".liking.update_last_mod_on_rated"
+				for=".interfaces.ILastModified .interfaces.IObjectFlaggingEvent" />
 
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
