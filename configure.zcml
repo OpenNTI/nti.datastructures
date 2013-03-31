@@ -91,7 +91,7 @@
 		 We reuse the rated modification time updater for flagging too; if we don't update mod times
 		 on flagging events, caching is really hard.
 	-->
-	<subscriber handler=".liking.update_last_mod_on_rated"
+	<subscriber handler=".liking.update_last_mod"
 				for=".interfaces.ILastModified .interfaces.IObjectFlaggingEvent" />
 
 	<include package="nti.externalization" file="meta.zcml" />
