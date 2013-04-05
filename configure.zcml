@@ -128,7 +128,7 @@
 	<subscriber handler="._Dataserver._process_did_fork_listener" />
 	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
 	<subscriber handler=".session_storage._create_sessions_for_new_user" />
-
+	<subscriber handler=".sessions._send_notification" />
 	<subscriber handler=".sharing.SharingSourceMixin_dynamicsharingtargetdeleted" />
 
 	<!-- Container events -->
