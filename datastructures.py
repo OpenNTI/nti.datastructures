@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 import time
 import datetime
 import collections
-import UserList
+import numbers
 import weakref
 
 import persistent
@@ -29,7 +29,6 @@ from zope.deprecation import deprecated
 from zope.container import contained as zcontained, btree
 from zope.location import interfaces as loc_interfaces
 from zope.dublincore import interfaces as dc_interfaces
-from zope.schema.fieldproperty import FieldProperty
 
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
                          ILink)
@@ -48,56 +47,47 @@ from nti.externalization.persistence import PersistentExternalizableWeakList
 from nti.externalization.persistence import PersistentExternalizableList
 from nti.externalization.singleton import SingletonDecorator
 
-from nti.zodb.minmax import NumericMaximum as _SafeMaximum
+from nti.zodb import minmax
+from nti.zodb.persistentproperty import PersistentPropertyHolder
 
 class ModDateTrackingObject(object):
-	""" Maintains an lastModified attribute containing a time.time()
-	modification stamp. Use updateLastMod() to update this value. """
+	"""
+	Maintains an lastModified attribute containing a time.time()
+	modification stamp. Use updateLastMod() to update this value.
+	Typically subclasses of this class should be :class:`nti.zodb.persistentproperty.PersistentPropertyHolder`
+	"""
 
+	lastModified = minmax.NumericPropertyDefaultingToZero( '_lastModified', minmax.NumericMaximum, as_number=True )
+
+	def __new__( cls, *args, **kwargs ):
+		if issubclass(cls, persistent.Persistent) and not issubclass(cls, PersistentPropertyHolder):
+			print("ERROR: subclassing Persistent, but not PersistentPropertyHolder", cls)
+		return super(ModDateTrackingObject,cls).__new__( cls, *args, **kwargs )
 
 	def __init__( self, *args, **kwargs ):
-		# NOTE: In the past, this was a simple number. That lead to dangerous
-		# conflict resolution practices, so now it's Maximum. But we don't
-		# change this in setstate, we wait until we write the modified value,
-		# to avoid writing unnecessary values. Note also that finding these
-		# objects and doing a migration is not feasible as they are /everywhere/
-		# Some subclasses may depend on being able to update last mod
-		# during construction, notably dictionaries initialized as a copy
-		self._init_modified()
 		super(ModDateTrackingObject,self).__init__( *args, **kwargs )
 
-	def _init_modified(self):
-		self._lastModified = _SafeMaximum(value=0)
-
-	def _get_lastModified(self):
-		# To make it easy to add this class as a mixin
-		# to any class, some of which may already be in the
-		# database, we handle missing last modified values
+	def __setstate__( self, state ):
+		if '_lastModified' in state and isinstance( state['_lastModified'], numbers.Number ):
+			# Are there actually any objects still around that have this condition?
+			# A migration to find them is probably difficult
+			state['_lastModified'] = minmax.NumericMaximum(state['_lastModified'])
+		# We may or may not be the base of the inheritance tree; usually we are not,
+		# but occasionally (mostly in tests) we are
 		try:
-			return self._lastModified.value
+			super(ModDateTrackingObject,self).__setstate__(state)
 		except AttributeError:
-			try:
-				return self._lastModified
-			except AttributeError:
-				return 0
-	def _set_lastModified(self, lm):
-		# NOTE: Changing this value through the property
-		# will result in false conflicts. Call the setter instead.
-		old_lm = getattr( self, '_lastModified', None )
-		if not hasattr( old_lm, 'value' ):
-			self._lastModified = _SafeMaximum( value=lm )
-		else:
-			self._lastModified.value = lm
-	lastModified = property( _get_lastModified, _set_lastModified )
+			self.__dict__.clear()
+			self.__dict__.update( state )
 
 	def updateLastMod(self, t=None ):
-		self._set_lastModified( t if t is not None and t > self.lastModified else time.time() )
+		self.lastModified = ( t if t is not None and t > self.lastModified else time.time() )
 		return self.lastModified
 
 	def updateLastModIfGreater( self, t ):
 		"Only if the given time is (not None and) greater than this object's is this object's time changed."
 		if t is not None and t > self.lastModified:
-			self._set_lastModified( t )
+			self.lastModified = t
 		return self.lastModified
 
 def _syntheticKeys( ):
@@ -191,7 +181,7 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 
 
 
-class PersistentCreatedModDateTrackingObject(persistent.Persistent,CreatedModDateTrackingObject):
+class PersistentCreatedModDateTrackingObject(PersistentPropertyHolder,CreatedModDateTrackingObject):
 	pass
 
 class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
@@ -237,7 +227,7 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 
 
 
-class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
+class ModDateTrackingOOBTree(PersistentPropertyHolder,ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
 	# This class and subclasses
 	# do not preserve custom attributes like 'lastModified'
 	# due to the implementation of __getstate__ in OOBTree.
@@ -262,8 +252,8 @@ class ModDateTrackingOOBTree(ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree
 		return result
 
 	def updateLastMod(self, t=None):
-		super(ModDateTrackingMappingMixin,self).__setitem__(StandardExternalFields.LAST_MODIFIED,
-															t if t is not None and t > self.lastModified else time.time() )
+		BTrees.OOBTree.OOBTree.__setitem__(self, StandardExternalFields.LAST_MODIFIED,
+										   t if t is not None and t > self.lastModified else time.time() )
 		return self.lastModified
 
 	def _get_lastModified( self ):
@@ -456,7 +446,7 @@ deprecated( 'CaseInsensitiveModDateTrackingOOBTree', 'Use nti.dataserver.contain
 deprecated( 'ModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
 deprecated( 'ModDateTrackingMappingMixin', 'Stores a key in the dictionary, not recommended.' )
 
-class ModDateTrackingPersistentMapping(ModDateTrackingMappingMixin, persistent.mapping.PersistentMapping, ExternalizableDictionaryMixin):
+class ModDateTrackingPersistentMapping(PersistentPropertyHolder, ModDateTrackingMappingMixin, persistent.mapping.PersistentMapping, ExternalizableDictionaryMixin):
 
 	def __init__(self, *args, **kwargs):
 		super(ModDateTrackingPersistentMapping,self).__init__(*args, **kwargs)
@@ -497,7 +487,7 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 
 from persistent.wref import WeakRef
 # WTF we doing here?
-PersistentExternalizableList.__bases__ = (ModDateTrackingObject,persistent.list.PersistentList)
+PersistentExternalizableList.__bases__ = (PersistentPropertyHolder,ModDateTrackingObject,persistent.list.PersistentList)
 _PersistentExternalizableWeakList = PersistentExternalizableWeakList
 
 class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,CreatedModDateTrackingObject):
@@ -642,7 +632,7 @@ def check_contained_object_for_storage( contained ):
 from zope.location import locate as loc_locate
 
 @interface.implementer(nti_interfaces.IZContained, loc_interfaces.ISublocations)
-class ContainedStorage(persistent.Persistent,ModDateTrackingObject):
+class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	"""
 	A specialized data structure for tracking contained objects.
 	"""

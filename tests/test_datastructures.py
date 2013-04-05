@@ -13,8 +13,10 @@ logger = __import__('logging').getLogger(__name__)
 
 from hamcrest import (assert_that, is_, has_entry, instance_of )
 from hamcrest import  is_in, not_none, is_not, greater_than, less_than
+does_not = is_not
 from hamcrest import greater_than_or_equal_to,  has_item
 from hamcrest import same_instance
+from hamcrest import has_key
 from hamcrest.library import has_property as has_attr
 import unittest
 from nose.tools import assert_raises
@@ -52,12 +54,11 @@ def test_containedmixins():
 def test_moddatetrackingobject_oldstates():
 	mto = ModDateTrackingObject()
 	assert_that( mto.lastModified, is_( 0 ) )
-	assert_that( mto._lastModified, has_attr( 'value', 0 ) )
+	assert_that( mto.__dict__, does_not( has_key( '_lastModified' ) ) )
 
 	# old state
-	mto._lastModified = 32
+	mto.__setstate__( {'_lastModified': 32 } )
 	assert_that( mto.lastModified, is_( 32 ) )
-	assert_that( mto._lastModified, is_( 32 ) )
 
 	# updates dynamically
 	mto.updateLastMod(42)
