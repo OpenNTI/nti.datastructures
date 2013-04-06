@@ -181,7 +181,9 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 
 
 
-class PersistentCreatedModDateTrackingObject(PersistentPropertyHolder,CreatedModDateTrackingObject):
+class PersistentCreatedModDateTrackingObject(CreatedModDateTrackingObject,PersistentPropertyHolder):
+	# order of inheritance matters; if Persistent is first, we can't have our own __setstate__;
+	# only subclasses can
 	pass
 
 class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
