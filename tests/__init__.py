@@ -5,7 +5,11 @@ from unittest import TextTestRunner
 import os
 
 # for export
-from nti.tests import has_attr, implements, Implements, provides, Provides
+from nti.tests import has_attr
+from nti.tests import implements
+from nti.tests import Implements
+from nti.tests import provides
+from nti.tests import Provides
 
 def runner(path, pattern="*.py"):
 	suite = defaultTestLoader.discover(path, pattern)
