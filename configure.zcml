@@ -2,7 +2,7 @@
 <configure xmlns="http://namespaces.zope.org/zope"
 	   xmlns:ext="http://nextthought.com/ntp/ext"
 	   xmlns:zcml="http://namespaces.zope.org/zcml"
-	   i18n_domain="zope">
+	   i18n_domain="nti.dataserver">
 	<include package="zope.component" />
 	<include package="zope.location" />
 	<include package="zope.traversing" />
