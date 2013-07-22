@@ -8,9 +8,5 @@ from nti.monkey import traversing_patch_on_import
 traversing_patch_on_import.patch()
 del traversing_patch_on_import
 
-from nti.monkey import repoze_zodbconn_patch_on_import
-repoze_zodbconn_patch_on_import.patch()
-del repoze_zodbconn_patch_on_import
-
 import zope.i18nmessageid
 MessageFactory = zope.i18nmessageid.MessageFactory('nti.dataserver')
