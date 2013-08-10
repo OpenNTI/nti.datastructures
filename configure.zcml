@@ -229,6 +229,15 @@
 	<adapter factory=".authorization._CommunityGroup"
 			 provides=".interfaces.IGroup"
 			 for=".users.Community" />
+			 
+	<!-- DFL can be principals and groups -->
+	<adapter factory=".authorization._DFLPrincipal"
+			 provides=".interfaces.IPrincipal"
+			 for=".interfaces.IDynamicSharingTargetFriendsList" />
+	<adapter factory=".authorization._DFLGroup"
+			 provides=".interfaces.IGroup"
+			 for=".users.DynamicFriendsList" />
+			 
 	<!-- Allow treating arbitrary strings as IPrincipal/IGroup -->
 	<adapter factory=".authorization._string_principal_factory"
 			 provides=".interfaces.IPrincipal"
