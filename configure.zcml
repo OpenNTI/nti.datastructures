@@ -274,7 +274,7 @@
 	<include package="." file="configure_weakrefs.zcml" />
 	
 	<configure zcml:condition="have devmode">
-		<utility factory="._python_rq._RQClient" provides=".interfaces.IRQClient"/>
+		<utility factory="._PythonRQ._RQClient" provides=".interfaces.IRQClient"/>
 	</configure>
 
 </configure>
