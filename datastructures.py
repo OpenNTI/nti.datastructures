@@ -5,50 +5,57 @@ Datatypes and datatype handling.
 
 $Id$
 """
-
 from __future__ import print_function, unicode_literals, absolute_import
 __docformat__ = "restructuredtext en"
 
-import logging
-logger = logging.getLogger(__name__)
+logger = __import__('logging').getLogger(__name__)
 
 import time
-import datetime
-import collections
+import logging
 import numbers
 import weakref
+import datetime
+import functools
+import collections
+
+import BTrees.OOBTree
 
 import persistent
-import BTrees.OOBTree
-import ZODB
+from persistent.wref import WeakRef
 
+import ZODB
 
 from zope import interface
 from zope import component
 from zope.deprecation import deprecated
+
+from zope.container.constraints import checkObject
+from zope.container.interfaces import InvalidItemType
 from zope.container import contained as zcontained, btree
-from zope.location import interfaces as loc_interfaces
+
 from zope.dublincore import interfaces as dc_interfaces
 
-from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY,
-                         ILink)
-from . import links
+from zope.location import locate as loc_locate
+from zope.location import interfaces as loc_interfaces
 
-from . import mimetype
-from nti.dataserver import interfaces as nti_interfaces
 from nti.dataserver import containers as container
-import nti.externalization.interfaces as ext_interfaces
+from nti.dataserver import interfaces as nti_interfaces
 
-# Deprecated below, used in this module. Re-exported for b/c
-from nti.externalization.oids import to_external_ntiid_oid
-from nti.externalization.externalization import toExternalObject
-from nti.externalization.datastructures import ExternalizableDictionaryMixin, LocatedExternalList, LocatedExternalDict
-from nti.externalization.persistence import PersistentExternalizableWeakList
-from nti.externalization.persistence import PersistentExternalizableList
-from nti.externalization.singleton import SingletonDecorator
+import nti.externalization.interfaces as ext_interfaces
 
 from nti.zodb import minmax
 from nti.zodb.persistentproperty import PersistentPropertyHolder
+
+from . import links
+from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
+
+# Deprecated below, used in this module. Re-exported for b/c
+from nti.externalization.oids import to_external_ntiid_oid
+from nti.externalization.singleton import SingletonDecorator
+from nti.externalization.externalization import toExternalObject
+from nti.externalization.persistence import PersistentExternalizableList
+from nti.externalization.datastructures import ExternalizableDictionaryMixin
+from nti.externalization.persistence import PersistentExternalizableWeakList
 
 class ModDateTrackingObject(object):
 	"""
@@ -179,8 +186,6 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 	modified = property( lambda self: datetime.datetime.fromtimestamp( self.lastModified ),
 						lambda self, dt: self.updateLastModIfGreater( time.mktime( dt.timetuple() ) ) )
 
-
-
 class PersistentCreatedModDateTrackingObject(CreatedModDateTrackingObject,PersistentPropertyHolder):
 	# order of inheritance matters; if Persistent is first, we can't have our own __setstate__;
 	# only subclasses can
@@ -226,8 +231,6 @@ class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 		result = super(ModDateTrackingMappingMixin, self).popitem()
 		self.updateLastMod()
 		return result
-
-
 
 class ModDateTrackingOOBTree(PersistentPropertyHolder,ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
 	# This class and subclasses
@@ -311,7 +314,6 @@ class ModDateTrackingOOBTree(PersistentPropertyHolder,ModDateTrackingMappingMixi
 															maxing( newState ) )
 		return result
 
-import functools
 @functools.total_ordering
 class _CaseInsensitiveKey(object):
 	"""
@@ -441,6 +443,7 @@ class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateT
 		return ((getattr(k,'key',k),v) for k,v in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).items())
 
 collections.Mapping.register( BTrees.OOBTree.OOBTree )
+
 # See the notes in that package. It's not safe to subclass btrees.
 # Consider zc.dict if necessary
 deprecated( 'KeyPreservingCaseInsensitiveModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
@@ -472,7 +475,6 @@ class ModDateTrackingPersistentMapping(PersistentPropertyHolder, ModDateTracking
 
 CreatedModDateTrackingPersistentMapping = ModDateTrackingPersistentMapping
 
-
 class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	""" For building up a sequence of lists, keeps the max last modified. """
 	def extend( self, other ):
@@ -487,7 +489,6 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	def __reduce__( self ):
 		raise TypeError("Transient object.")
 
-from persistent.wref import WeakRef
 # WTF we doing here?
 PersistentExternalizableList.__bases__ = (PersistentPropertyHolder,ModDateTrackingObject,persistent.list.PersistentList)
 _PersistentExternalizableWeakList = PersistentExternalizableWeakList
@@ -630,9 +631,6 @@ def check_contained_object_for_storage( contained ):
 	if not getattr( contained, 'containerId' ):
 		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
 
-
-from zope.location import locate as loc_locate
-
 @interface.implementer(nti_interfaces.IZContained, loc_interfaces.ISublocations)
 class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	"""
@@ -738,7 +736,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 				raise ValueError(d)
 			# Lists. Note that duplicates may have
 			# crept in. TODO: We should probably remove them all
-			ix = None
 			ix = c.index( d )
 			d = c[ix]
 			c.pop( ix )
@@ -1000,8 +997,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			self.afterDeleteContainedObject( contained )
 			return contained
 
-
-
 	@property
 	def afterDeleteContainedObject( self ):
 		if hasattr( self, '_v_afterDel' ):
@@ -1071,9 +1066,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 
 	def __repr__( self ):
 		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
-
-from zope.container.constraints import checkObject
-from zope.container.interfaces import InvalidItemType
 
 @interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
 						nti_interfaces.INamedContainer,
@@ -1149,10 +1141,7 @@ class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContain
 class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsensitiveLastModifiedBTreeContainer,AbstractNamedLastModifiedBTreeContainer):
 	pass
 
-from nti.zodb.minmax import MergingCounter
 deprecated( "MergingCounter", "Prefer nti.zodb.minmax" )
-
-
 
 # deprecated( "fromExternalOID", "Prefer nti.externalization.oids.fromExternalOID" )
 deprecated( "to_external_ntiid_oid", "Prefer nti.externalization.oids.to_external_ntiid_oid" )
@@ -1176,6 +1165,3 @@ deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.pe
 # deprecated( "setPersistentStateChanged", "Prefer nti.externalization.persistence.setPersistentStateChanged" )
 deprecated( "PersistentExternalizableWeakList", "Prefer nti.externalization.persistence.PersistentExternalizableWeakList" )
 deprecated( "PersistentExternalizableList", "Prefer nti.externalization.persistence.PersistentExternalizableList" )
-
-
-# from nti.externalization.externalization import EXT_FORMAT_JSON, EXT_FORMAT_PLIST
