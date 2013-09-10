@@ -74,18 +74,21 @@ class ModDateTrackingObject(object):
 	def __init__( self, *args, **kwargs ):
 		super(ModDateTrackingObject,self).__init__( *args, **kwargs )
 
-	def __setstate__( self, state ):
-		if '_lastModified' in state and isinstance( state['_lastModified'], numbers.Number ):
+	def __setstate__(self, data):
+		if isinstance(data, collections.Mapping) and '_lastModified' in data and isinstance(data['_lastModified'], numbers.Number):
 			# Are there actually any objects still around that have this condition?
 			# A migration to find them is probably difficult
-			state['_lastModified'] = minmax.NumericMaximum(state['_lastModified'])
+			data['_lastModified'] = minmax.NumericMaximum(data['_lastModified'])
+		elif isinstance(data, (float, int)):  # Not sure why we get float here
+			data = {'_lastModified':data}
+
 		# We may or may not be the base of the inheritance tree; usually we are not,
 		# but occasionally (mostly in tests) we are
 		try:
-			super(ModDateTrackingObject,self).__setstate__(state)
+			super(ModDateTrackingObject, self).__setstate__(data)
 		except AttributeError:
 			self.__dict__.clear()
-			self.__dict__.update( state )
+			self.__dict__.update(data)
 
 	def updateLastMod(self, t=None ):
 		self.lastModified = ( t if t is not None and t > self.lastModified else time.time() )
