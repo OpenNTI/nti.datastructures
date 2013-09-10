@@ -80,7 +80,7 @@ class ModDateTrackingObject(object):
 			# A migration to find them is probably difficult
 			data['_lastModified'] = minmax.NumericMaximum(data['_lastModified'])
 		elif isinstance(data, (float, int)):  # Not sure why we get float here
-			data = {'_lastModified':data}
+			data = {'_lastModified':minmax.NumericMaximum('data')}
 
 		# We may or may not be the base of the inheritance tree; usually we are not,
 		# but occasionally (mostly in tests) we are
