@@ -8,8 +8,9 @@
 
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.security" file="meta.zcml" />
+	<include package="zope.preference" file="meta.zcml" />
 	<include package="zope.component" />
-	
+
 	<include package="zope.location" />
 	<include package="zope.traversing" />
 	<include package="zope.container" />
@@ -27,6 +28,8 @@
 	<!-- Broken objects that support annotations and locations -->
 	<exclude package="zope.app.broken" file="browser.zcml" />
 	<include package="zope.app.broken" />
+
+	<include package="zope.preference" />
 
 	<!-- Hashed password management. Includes zope.password -->
 	<include package="z3c.bcrypt" />
@@ -231,12 +234,33 @@
 	<adapter factory=".authorization._UserGroupAwarePrincipal"
 			 provides=".interfaces.IGroupAwarePrincipal"
 			 for=".interfaces.IUser" />
+	<!--
+		 And we can get back from that to something that is
+		 annotatable -->
+	<adapter
+		factory=".authorization._UserGroupAwarePrincipalAnnotations"
+		provides="zope.annotation.interfaces.IAnnotations"
+		for=".authorization._UserGroupAwarePrincipal" />
+
+	<!--
+	...and when we need annotations in any more explicit
+	context. Primarily this is for zope.preference,
+	but zope.principalannotation registers its adapter
+	for (IPrincipal, *).
+	TODO: Why aren't we including that code? We'd probably
+	need the whole principal folder setup.
+	-->
+	<adapter
+		factory=".authorization._UserGroupAwarePrincipalAnnotations"
+		provides="zope.annotation.interfaces.IAnnotations"
+		for=".authorization._UserGroupAwarePrincipal *" />
+
 
 	<!-- Communities can be groups -->
 	<adapter factory=".authorization._CommunityGroup"
 			 provides=".interfaces.IGroup"
 			 for=".users.Community" />
-			 
+
 	<!-- DFL can be principals and groups -->
 	<adapter factory=".authorization._DFLPrincipal"
 			 provides=".interfaces.IPrincipal"
@@ -244,7 +268,7 @@
 	<adapter factory=".authorization._DFLGroup"
 			 provides=".interfaces.IGroup"
 			 for=".users.DynamicFriendsList" />
-			 
+
 	<!-- Allow treating arbitrary strings as IPrincipal/IGroup -->
 	<adapter factory=".authorization._string_principal_factory"
 			 provides=".interfaces.IPrincipal"
@@ -279,7 +303,7 @@
 
 	<!-- Weak refs -->
 	<include package="." file="configure_weakrefs.zcml" />
-	
+
 	<configure zcml:condition="have devmode">
 		<utility factory="._PythonRQ._RQClient" provides=".interfaces.IRQClient"/>
 	</configure>
