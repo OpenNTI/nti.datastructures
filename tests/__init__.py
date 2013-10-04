@@ -2,7 +2,7 @@
 
 
 # for export
-import nti.tests
-has_attr = nti.tests.has_attr
-provides = nti.tests.provides
-implements = nti.tests.implements
+from  nti.testing import matchers
+has_attr = matchers.has_attr
+provides = matchers.provides
+implements = matchers.implements
