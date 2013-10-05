@@ -21,7 +21,7 @@ from hamcrest.library import has_property as has_attr
 import unittest
 from nose.tools import assert_raises
 
-from nti.tests import AbstractTestBase
+from nti.testing.base import AbstractTestBase
 
 import collections
 
@@ -40,7 +40,7 @@ with nti.deprecated.hiding_warnings():
 	from nti.externalization.oids import toExternalOID
 
 
-	from nti.tests import validly_provides as verifiably_provides
+	from nti.testing.matchers import validly_provides as verifiably_provides
 	from . import mock_dataserver
 	from nti.dataserver import contenttypes
 	from nti.dataserver import interfaces as nti_interfaces
