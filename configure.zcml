@@ -107,8 +107,6 @@
 	<include package="nti.externalization" file="meta.zcml" />
 	<include package="nti.externalization" />
 
-	<ext:registerMimeFactories module=".classes" />
-
 	<include package=".contenttypes" />
 	<include package="nti.chatserver" />
 	<include package="nti.contentlibrary" />
@@ -153,7 +151,6 @@
 
 	<!-- Chat -->
 	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
-	<adapter factory=".meeting_container_storage._ClassSectionAdapter" />
 	<adapter factory=".chat_transcripts._UserTranscriptStorageAdapter" />
 	<adapter factory=".chat_transcripts.TranscriptSummaryAdapter"
 			 provides=".interfaces.ITranscriptSummary" />
