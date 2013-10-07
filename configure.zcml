@@ -9,8 +9,11 @@
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.security" file="meta.zcml" />
 	<include package="zope.preference" file="meta.zcml" />
-	<include package="zope.component" />
+	<include package="zope.principalregistry" file="meta.zcml" />
+	<include package="zope.i18n" file="meta.zcml" />
 
+	<include package="zope.component" />
+	<include package="zope.principalregistry" />
 	<include package="zope.location" />
 	<include package="zope.traversing" />
 	<include package="zope.container" />
@@ -20,8 +23,8 @@
 	<include package="zope.security" />
 	<include package="zope.vocabularyregistry" />
 	<include package="zope.site" />
-	<include package="zope.i18n" file="meta.zcml" />
 	<include package="zope.i18n" />
+
 	<include package="zope.generations" />
 	<include package="zope.generations" file="subscriber.zcml" />
 
@@ -37,6 +40,29 @@
 	<!-- Trivial password policy utility for devmode -->
 	<utility factory="z3c.password.password.TrivialPasswordUtility"
 		 zcml:condition="have devmode" />
+
+	<!-- Entries in the Zope root principal registry -->
+	<!--
+		 Note that we choose names that match pyramid
+		 where applicable, and in that style otherwise
+	-->
+	<unauthenticatedPrincipal
+		id="system.Unknown"
+		title="Anonymous user"
+		description="A person we don't know" />
+	<unauthenticatedGroup
+		id="system.UnknownGroup"
+		title="Anonymous users"
+		description="People we don't know" />
+	<authenticatedGroup
+		id="system.Authenticated"
+		title="Authenticated users"
+		description="People we know" />
+	<everybodyGroup
+		id="system.Everyone"
+		title="Everybody"
+		description="All people" />
+
 
 	<include package="nti.wref" />
 
@@ -218,6 +244,8 @@
 
 	<!--
 	Also, a place to store content access roles.
+	NOTE: This should be going away in favor of
+	zope.pluggableauth.plugins.groupfolders
 	-->
 	<adapter factory=".authorization._content_role_member_factory"
 			 provides=".interfaces.IMutableGroupMember"
@@ -244,8 +272,9 @@
 	context. Primarily this is for zope.preference,
 	but zope.principalannotation registers its adapter
 	for (IPrincipal, *).
-	TODO: Why aren't we including that code? We'd probably
-	need the whole principal folder setup.
+	NOTE: We are /not/ enabling/configuring zope.principalannotation
+	because it wants to live as its own persistent component in the
+	site manager in the database.
 	-->
 	<adapter
 		factory=".authorization._UserGroupAwarePrincipalAnnotations"
