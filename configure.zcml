@@ -23,6 +23,14 @@
 	<include package="zope.security" />
 	<include package="zope.vocabularyregistry" />
 	<include package="zope.site" />
+	<!--
+	Our own version of zope.site.threadSiteSubscriber
+	that is careful to preserve any of our non-persistent host-based
+	configuration needed.
+
+	The zope.site version is registered by zope.app.publication
+	-->
+	<subscriber handler=".site.threadSiteSubscriber" />
 	<include package="zope.i18n" />
 
 	<include package="zope.generations" />
