@@ -287,6 +287,11 @@
 		factory=".authorization._UserGroupAwarePrincipalAnnotations"
 		provides="zope.annotation.interfaces.IAnnotations"
 		for=".authorization._UserGroupAwarePrincipal *" />
+	<!-- It externalizes as the underlying user -->
+	<adapter
+		factory=".authorization._UserGroupAwarePrincipalExternalObject"
+		provides="nti.externalization.interfaces.IExternalObject"
+		for=".authorization._UserGroupAwarePrincipal" />
 
 
 	<!-- Communities can be groups -->
