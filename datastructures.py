@@ -182,7 +182,12 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 		# Some of our subclasses have class attributes for fixed creators.
 		# don't override those unless we have to
 		if not hasattr(self, 'creator'):
-			self.creator = None
+			try:
+				self.creator = None
+			except AttributeError:
+				# A read-only property in the class dict that
+				# isn't available yet
+				pass
 
 	created = property( lambda self: datetime.datetime.fromtimestamp( self.createdTime ),
 						lambda self, dt: setattr( self, 'createdTime', time.mktime( dt.timetuple() ) ) )
