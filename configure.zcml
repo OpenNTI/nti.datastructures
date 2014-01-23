@@ -10,7 +10,7 @@
 	<include package="zope.component" file="meta.zcml" />
 	<include package="zope.preference" file="meta.zcml" />
 	<include package="zope.principalregistry" file="meta.zcml" />
-		
+
 	<include package="zope.site" />
 	<include package="zope.catalog" />
 	<include package="zope.location" />
@@ -31,7 +31,7 @@
 	The zope.site version is registered by zope.app.publication
 	-->
 	<subscriber handler=".site.threadSiteSubscriber" />
-	
+
 	<include package="zope.i18n" />
 
 	<include package="zope.generations" />
@@ -46,7 +46,7 @@
 	<!-- Hashed password management. Includes zope.password -->
 	<include package="z3c.bcrypt" />
 	<include package="z3c.password" />
-	
+
 	<!-- Trivial password policy utility for devmode -->
 	<utility factory="z3c.password.password.TrivialPasswordUtility"
 		 zcml:condition="have devmode" />
@@ -93,18 +93,18 @@
 	-->
 	<exclude package="zope.intid" file="subscribers.zcml" />
 	<include package="zope.intid" />
-	
+
 	<include package="nti.intid" />
 	<include package="nti.intid" file="subscribers.zcml" />
-	
+
 	<include package="zope.keyreference" />
-	
+
 	<!--
 	zc.intid fires a different set of events when objects gain/lose
 	intids.
 	-->
 	<include package="zc.intid" />
-	
+
 	<!-- This file has a bug, so we replicate its effect -->
 	<!--
 	<include package="zc.intid" file="zope-intid.zcml" />
@@ -138,7 +138,7 @@
 	</configure>
 	<subscriber handler=".liking.update_last_mod_on_rated" />
 	<subscriber handler=".rating.update_last_mod_on_rated" />
-		
+
 	<!-- Flagging -->
 	<adapter factory=".flagging.FlaggableGlobalFlagStorageFactory" />
 	<subscriber handler=".flagging._delete_flagged_object" />
@@ -180,6 +180,9 @@
 
 	<!-- Events -->
 	<subscriber handler=".sessions._send_notification" />
+	<subscriber handler=".sessions._increment_count_for_new_socket" />
+	<subscriber handler=".sessions._decrement_count_for_dead_socket" />
+
 	<subscriber handler="._Dataserver._process_did_fork_listener" />
 	<subscriber handler=".session_storage._create_sessions_for_new_user" />
 	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
@@ -187,13 +190,13 @@
 
 	<!-- Container events -->
 	<subscriber handler=".containers.update_container_modified_time" />
-	
+
 	<!-- TODO: We are relying on registration order. Make sure that's kosher. -->
 	<subscriber handler=".containers.update_object_modified_time" />
 	<subscriber handler=".containers.update_parent_modified_time" />
 
 	<subscriber handler=".containers.contain_nested_objects" />
-	
+
 	<!-- Container adapters -->
 	<adapter factory=".containers.IdGeneratorNameChooser" />
 
@@ -218,7 +221,7 @@
 	<adapter factory=".meeting_storage.CreatorBasedAnnotationMessageInfoStorage" />
 
 	<!-- Externalization -->
-	<!--	
+	<!--
 		<adapter factory=".links.NoOpLinkExternalObjectAdapter"
 				 name="wsgi" />
 	-->
@@ -232,7 +235,7 @@
 	<subscriber factory=".rating.RatingDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
 	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
-	
+
 	<!--
 	It breaks fewer test cases to let these pass right on through with
 	the LinkNonExternalizableReplacer...they like to get the .target
@@ -242,7 +245,7 @@
 	-->
 	<subscriber factory=".links_external.LinkExternalObjectDecorator"
 				provides="nti.externalization.interfaces.IExternalObjectDecorator" />
-				
+
 	<!--
 	However, we do register it for second-pass, on the fly,
 	rendering
