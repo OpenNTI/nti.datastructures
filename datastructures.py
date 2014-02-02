@@ -15,7 +15,6 @@ import logging
 import numbers
 import weakref
 import datetime
-import functools
 import collections
 
 import BTrees.OOBTree
@@ -27,11 +26,13 @@ import ZODB
 
 from zope import interface
 from zope import component
-from zope.deprecation import deprecated
+
+import zope.deferredimport
+zope.deferredimport.initialize()
 
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
-from zope.container import contained as zcontained, btree
+from zope.container import contained as zcontained
 
 from zope.dublincore import interfaces as dc_interfaces
 
@@ -49,13 +50,12 @@ from nti.zodb.persistentproperty import PersistentPropertyHolder
 from . import links
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
 
-# Deprecated below, used in this module. Re-exported for b/c
+
 from nti.externalization.oids import to_external_ntiid_oid
 from nti.externalization.singleton import SingletonDecorator
 from nti.externalization.externalization import toExternalObject
-from nti.externalization.persistence import PersistentExternalizableList
-from nti.externalization.datastructures import ExternalizableDictionaryMixin
-from nti.externalization.persistence import PersistentExternalizableWeakList
+from nti.externalization.persistence import PersistentExternalizableWeakList as _PersistentExternalizableWeakList
+from nti.externalization.persistence import PersistentExternalizableList as _PersistentExternalizableList
 
 class ModDateTrackingObject(object):
 	"""
@@ -115,9 +115,6 @@ isSyntheticKey = _isMagicKey
 _magic_keys = set( _syntheticKeys() )
 
 from nti.externalization.interfaces import StandardInternalFields, StandardExternalFields
-deprecated( "StandardExternalFields", "Prefer nti.externalization.interfaces" )
-deprecated( "StandardInternalFields", "Prefer nti.externalization.interfaces" )
-
 
 def find_links( self ):
 	"""
@@ -199,289 +196,18 @@ class PersistentCreatedModDateTrackingObject(CreatedModDateTrackingObject,Persis
 	# only subclasses can
 	pass
 
-class ModDateTrackingMappingMixin(CreatedModDateTrackingObject):
 
-	def __init__( self, *args ):
-		super(ModDateTrackingMappingMixin, self).__init__( *args )
+# Commented out while we check for this case
+#zope.deferredimport.deprecatedFrom(
+#	"The implementation here was broken and exists only for BWC",
+#	"nti.dataserver.container",
+#	"_CaseInsensitiveKey")
 
-	def updateLastMod(self, t=None ):
-		ModDateTrackingObject.updateLastMod( self, t )
-		# FIXME: This produces artificial conflicts.
-		# Convert this and the superclass to use zope.minmax.Maximum
-		# Will require changes to some iteration places to avoid that value
-		# We really just don't want this value in the map
-		super(ModDateTrackingMappingMixin,self).__setitem__(StandardExternalFields.LAST_MODIFIED, self.lastModified )
-		return self.lastModified
-
-	def __delitem__(self, key):
-		if  key in _magic_keys:
-			return
-		super(ModDateTrackingMappingMixin, self).__delitem__(key)
-		self.updateLastMod()
-
-	def __setitem__(self, key, y):
-		if key in _magic_keys:
-			return
-
-		super(ModDateTrackingMappingMixin, self).__setitem__(key,y)
-		self.updateLastMod()
-
-	def update( self, d ):
-		super(ModDateTrackingMappingMixin, self).update( d )
-		self.updateLastMod()
-
-	def pop( self, key, *args ):
-		result = super(ModDateTrackingMappingMixin, self).pop( key, *args )
-		self.updateLastMod()
-		return result
-
-	def popitem( self ):
-		result = super(ModDateTrackingMappingMixin, self).popitem()
-		self.updateLastMod()
-		return result
-
-class ModDateTrackingOOBTree(PersistentPropertyHolder,ModDateTrackingMappingMixin, BTrees.OOBTree.OOBTree, ExternalizableDictionaryMixin):
-	# This class and subclasses
-	# do not preserve custom attributes like 'lastModified'
-	# due to the implementation of __getstate__ in OOBTree.
-	# Thus, we lose them across persistence. This is hidden by
-	# defaults in another superclass. Some things compensate by checking
-	# the 'Last Modified' entry, but that's not good to have either.
-	# Therefore, we override all of the methods from the superclass
-	# in terms of the dictionary entry added my ModDateTrackingMappingMixin.
-	# We want to avoid any extra objects that might get added to the connection,
-	# but never be accessed again, so we avoid the _lastModified attribute
-	# entirely (hence picking the implementations instead of super())
-	def __init__(self, *args):
-		BTrees.OOBTree.OOBTree.__init__( self, *args )
-
-	def _init_modified(self):
-		return
-
-	def toExternalDictionary(self, mergeFrom=None):
-		result = super(ModDateTrackingOOBTree,self).toExternalDictionary(mergeFrom)
-		for key, value in self.iteritems():
-			result[key] = toExternalObject( value )
-		return result
-
-	def updateLastMod(self, t=None):
-		BTrees.OOBTree.OOBTree.__setitem__(self, StandardExternalFields.LAST_MODIFIED,
-										   t if t is not None and t > self.lastModified else time.time() )
-		return self.lastModified
-
-	def _get_lastModified( self ):
-		return self.get( StandardExternalFields.LAST_MODIFIED, 0 )
-	def _set_lastModified( self, lm ):
-		BTrees.OOBTree.OOBTree.__setitem__( self, StandardExternalFields.LAST_MODIFIED, lm )
-	lastModified = property(_get_lastModified,_set_lastModified)
-
-	def _p_resolveConflict(self, oldState, savedState, newState ):
-		# Our super class will generally resolve what conflicts it
-		# can, or throw an exception. If it resolves things,
-		# we just want to update our last modified time---that's the thing
-		# most likely to conflict.
-
-		# Note that a conflict it cannot resolve is if both savedState and newState
-		# get the addition of the same new key. (e.g., two transactions both add
-		# the same new key). Given some application knowledge, we might
-		# be able to merge the values for those keys.
-
-		# A BTree writes its state as a sequence of tuples, for each bucket.
-		# A bucket may be an OOBucket, or a tuple itself, if it is small.
-		# If we're small enough that the conflict is in this object, then
-		# it must be a tuple
-		logger.info( 'Conflict to resolve in %s', type(self) )
-		# We just make the last modified to be now
-		lm = time.time()
-		def maxing( state ):
-			if isinstance( state, tuple ):
-				state = list(state)
-				i = 0
-				while i < len(state):
-					eq = False
-					try:
-						eq = (state[i] == StandardExternalFields.LAST_MODIFIED)
-					except ValueError:
-						# Probably a PersistentReference object we're not interested in
-						eq = False
-
-					if eq:
-						state[i+1] = lm
-						i += 1
-					else:
-						state[i] = maxing(state[i])
-					i += 1
-				state = tuple(state)
-			return state
-
-		# Note that we're not using super(), we're actually picking the implementation
-		# The one we get from ModDateTrackingMappingMixin fails with this structure
-		result = BTrees.OOBTree.OOBTree._p_resolveConflict( self,
-															maxing( oldState ),
-															maxing( savedState ),
-															maxing( newState ) )
-		return result
-
-@functools.total_ordering
-class _CaseInsensitiveKey(object):
-	"""
-	This class implements a dictionary key that preserves case, but
-	compares case-insensitively.
-
-	This is a bit of a heavyweight solution. It is nonetheless optimized for comparisons
-	only with other objects of its same type. It must not be subclassed.
-	"""
-
-	def __init__( self, key ):
-		self.key = key
-		self._lower_key = key.lower()
-
-	def __str__( self ):
-		return self.key
-
-	def __repr__( self ):
-		return "%s('%s')" % (self.__class__, self.key)
-
-	def __eq__(self, other):
-		try:
-			return other is self or other._lower_key == self._lower_key
-		except AttributeError:
-			return NotImplemented
-
-	def __hash__(self):
-		return hash(self._lower_key)
-
-	### NOTE: This class is slightly broken for ordering comparisons.
-	# We allow comparing ourself to string (and only strings)
-	# instead of return NotImplemented. This is not right, because
-	# equality doesn't do this. But it is necessary for backwards
-	# compatibility with existing sorted BTrees.
-	# TODO: How to really fix this?
-	# TODO: Could this lead to data loss? Something not less than, not greater
-	# than, but also not equal to something else?
-
-	def __lt__(self, other):
-		try:
-			return self._lower_key < other._lower_key
-		except AttributeError:
-			return self._lower_key < other
-
-	def __gt__(self, other):
-		try:
-			return self._lower_key > other._lower_key
-		except AttributeError:
-			return self._lower_key > other
-
-from repoze.lru import lru_cache
-
-# These work best as plain functions so that the 'self'
-# argument is not captured. The self argument is persistent
-# and so that messes with caches
-@lru_cache(10000)
-def _tx_key_lower(key):
-	# updateLastModified doesn't go through our transformation,
-	# so we must also not transform the Last Modified key
-	if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
-		key = key.lower()
-	return key
-
-@lru_cache(10000)
-def _tx_key_insen(key):
-	if isinstance( key, basestring ) and key not in _magic_keys: # use basestring, not six.stringtypes, marginally faster
-		key = _CaseInsensitiveKey( key )
-	return key
-
-class CaseInsensitiveModDateTrackingOOBTree(ModDateTrackingOOBTree):
-	"""
-	This class should not be used as it changes the stored keys.
-	"""
-	# This is left for backwards compatibility.
-
-	def __init__(self, *args ):
-		super(CaseInsensitiveModDateTrackingOOBTree, self).__init__( *args )
-
-	def _tx_key( self, key ):
-		return _tx_key_lower( key )
-
-	def __getitem__(self, key):
-		key = self._tx_key( key )
-		return super(CaseInsensitiveModDateTrackingOOBTree, self).__getitem__(key)
-
-	def __contains__(self, key):
-		key = self._tx_key( key )
-		return super(CaseInsensitiveModDateTrackingOOBTree, self).__contains__(key)
-
-	def __delitem__(self, key):
-		key = self._tx_key( key )
-		return super(CaseInsensitiveModDateTrackingOOBTree, self).__delitem__(key)
-
-	def __setitem__(self, key, value):
-		key = self._tx_key( key )
-		return super(CaseInsensitiveModDateTrackingOOBTree, self).__setitem__(key, value)
-
-	def get( self, key, dv=None ):
-		key = self._tx_key( key )
-		return super( CaseInsensitiveModDateTrackingOOBTree, self).get( key, dv )
-
-class KeyPreservingCaseInsensitiveModDateTrackingOOBTree(CaseInsensitiveModDateTrackingOOBTree):
-	"""
-	Preserves the case of the inserted keys.
-	"""
-
-	def __init__(self, *args ):
-		super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree, self).__init__( *args )
-
-	def _tx_key( self, key ):
-		return _tx_key_insen( key )
-
-	def keys(self,key=None):
-		# TODO: Don't force this to be materialized
-		return [getattr(k,'key',k) for k in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).keys(key)]
-
-	def items(self,key=None):
-		# TODO: Don't force this to be materialized
-		return [(getattr(k,'key',k),v) for k,v in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).items(key)]
-
-	def iterkeys(self,key=None):
-		return (getattr(k,'key',k) for k in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).keys(key))
-
-	__iter__ = iterkeys
-
-	def iteritems(self):
-		return ((getattr(k,'key',k),v) for k,v in super(KeyPreservingCaseInsensitiveModDateTrackingOOBTree,self).items())
 
 collections.Mapping.register( BTrees.OOBTree.OOBTree )
 
-# See the notes in that package. It's not safe to subclass btrees.
+# See the notes in nti.dataserver.containers package. It's not safe to subclass btrees.
 # Consider zc.dict if necessary
-deprecated( 'KeyPreservingCaseInsensitiveModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
-deprecated( 'CaseInsensitiveModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
-deprecated( 'ModDateTrackingOOBTree', 'Use nti.dataserver.container instead' )
-deprecated( 'ModDateTrackingMappingMixin', 'Stores a key in the dictionary, not recommended.' )
-
-class ModDateTrackingPersistentMapping(PersistentPropertyHolder, ModDateTrackingMappingMixin, persistent.mapping.PersistentMapping, ExternalizableDictionaryMixin):
-
-	def __init__(self, *args, **kwargs):
-		super(ModDateTrackingPersistentMapping,self).__init__(*args, **kwargs)
-		# Copy in the creator and last modified from the first argument
-		# (the initial data) if it has them and we don't yet have them
-		if args:
-			if getattr( args[0], StandardInternalFields.CREATOR, None ) and not self.creator:
-				self.creator = args[0].creator
-			if getattr( args[0], 'lastModified', None ) and not self.lastModified:
-				self.lastModified = args[0].lastModified
-
-
-	def toExternalDictionary(self, mergeFrom=None):
-		result = super(ModDateTrackingPersistentMapping,self).toExternalDictionary(mergeFrom)
-		for key, value in self.iteritems():
-			result[key] = toExternalObject( value )
-		return result
-
-	def __hash__( self ):
-		return hash( tuple( self.iterkeys() ) )
-
-CreatedModDateTrackingPersistentMapping = ModDateTrackingPersistentMapping
 
 class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	""" For building up a sequence of lists, keeps the max last modified. """
@@ -497,11 +223,14 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	def __reduce__( self ):
 		raise TypeError("Transient object.")
 
-# WTF we doing here?
-PersistentExternalizableList.__bases__ = (PersistentPropertyHolder,ModDateTrackingObject,persistent.list.PersistentList)
-_PersistentExternalizableWeakList = PersistentExternalizableWeakList
+# XXX
+# For BWC, we apply these properties to the base class too,
+# but the implementation is not correct as they do not get updated...
+_PersistentExternalizableList.__bases__ = (PersistentCreatedModDateTrackingObject,) + _PersistentExternalizableList.__bases__
 
-class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,CreatedModDateTrackingObject):
+class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,
+									   PersistentCreatedModDateTrackingObject):
+
 	"""
 	Stores :class:`persistent.Persistent` objects as weak references, invisibly to the user.
 	Any weak references added to the list will be treated the same.
@@ -572,48 +301,17 @@ class _ContainedMixin(zcontained.Contained):
 
 ContainedMixin = ZContainedMixin = _ContainedMixin
 
-@interface.implementer( nti_interfaces.ILastModified )
-class ModDateTrackingBTreeContainer(btree.BTreeContainer):
 
-	def __init__( self ):
-		super(ModDateTrackingBTreeContainer,self).__init__()
-
-	def _newContainerData(self):
-		return ModDateTrackingOOBTree()
-
-	def __len__( self ):
-		# The 'last modified' member is always present
-		# and implicitly added
-		return super(ModDateTrackingBTreeContainer,self).__len__() + 1
-
-	@property
-	def lastModified(self):
-		return self._SampleContainer__data.lastModified
-
-	def updateLastMod(self, t=None ):
-		return self._SampleContainer__data.updateLastMod( t=t )
-
-	def updateLastModIfGreater( self, t ):
-		return self._SampleContainer__data.updateLastModIfGreater( t )
-
-	def itervalues(self):
-		return self._SampleContainer__data.itervalues()
-
-	def iterkeys(self):
-		return self._SampleContainer__data.iterkeys()
-
-	def iteritems(self):
-		return self._SampleContainer__data.iteritems()
-
-collections.Mapping.register( ModDateTrackingBTreeContainer )
-
-class KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer(ModDateTrackingBTreeContainer):
-
-	def _newContainerData(self):
-		return KeyPreservingCaseInsensitiveModDateTrackingOOBTree()
-
-deprecated( 'ModDateTrackingBTreeContainer', "use nti.dataserver.container classes instead." )
-deprecated( 'KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer', "use nti.dataserver.container classes instead." )
+# These were very bad ideas that didn't work cleanly because
+# they tried to store attributes on the BTree itself, which
+# doesn't work. We define these deprecated aliases...the
+# implementation isn't quite the same but the pickles should basically
+# be compatible and work as expected.
+zope.deferredimport.deprecatedFrom(
+	"Use the container classes instead",
+	"nti.dataserver.container",
+	"ModDateTrackingBTreeContainer",
+	"KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer")
 
 def _noop(*args): pass
 
@@ -1070,46 +768,11 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		return (container for container
 				in self.itervalues()
 				# Recall that we could be holding containers given to __init__ that we are not the parent of
-				if (loc_interfaces.ILocation.providedBy(container) and container.__parent__ is self))
+				if loc_interfaces.ILocation.providedBy(container) and container.__parent__ is self)
 
 	def __repr__( self ):
 		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
 
-@interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
-						nti_interfaces.INamedContainer,
-						nti_interfaces.ILastModified )
-class AbstractNamedContainerMap(ModDateTrackingBTreeContainer):
-	"""
-	A container that implements the basics of a :class:`INamedContainer` as
-	a mapping.
-
-	You must supply the `contained_type` attribute and the `container_name`
-	attribute.
-
-	You *should* define a specific interface for each type of homogeneous
-	container. This interface should use :func:`zope.container.constraints.contains`
-	to declare that it `contains` the `contained_type`. (The `contained_type` will
-	one day be deprecated.) This object will check the constraints declared
-	in the interfaces for the container and the objects.
-	"""
-
-	contained_type = None
-	container_name = None
-
-	def __init__( self, *args, **kwargs ):
-		super(AbstractNamedContainerMap,self).__init__( *args, **kwargs )
-
-	def __setitem__(self, key, item):
-		# TODO: Finish porting this all over to the constraints in zope.container.
-		# That will require specific subtypes for each contained_type (which we already have)
-		# We start the process by using checkObject to validate any preconditions
-		# that are defined
-		checkObject( self, key, item )
-		if not self.contained_type.providedBy( item ):
-			raise InvalidItemType( self, item, (self.contained_type,) )
-		super(AbstractNamedContainerMap,self).__setitem__(key, item)
-
-deprecated('AbstractNamedContainerMap', "Prefer AbstractNamedLastModifiedBTreeContainer" )
 
 @interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
 						nti_interfaces.INamedContainer,
@@ -1146,30 +809,26 @@ class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContain
 			raise InvalidItemType( self, item, (self.contained_type,) )
 		super(AbstractNamedLastModifiedBTreeContainer,self).__setitem__(key, item)
 
-class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsensitiveLastModifiedBTreeContainer,AbstractNamedLastModifiedBTreeContainer):
+class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsensitiveLastModifiedBTreeContainer,
+															 AbstractNamedLastModifiedBTreeContainer):
 	pass
 
-deprecated( "MergingCounter", "Prefer nti.zodb.minmax" )
-
-# deprecated( "fromExternalOID", "Prefer nti.externalization.oids.fromExternalOID" )
-deprecated( "to_external_ntiid_oid", "Prefer nti.externalization.oids.to_external_ntiid_oid" )
-# deprecated( "toExternalOID", "Prefer nti.externalization.oids.toExternalOID" )
-# deprecated( "to_json_representation", "Prefer nti.externalization.externalization.to_json_representation" )
-# deprecated( "toExternalDictionary", "Prefer nti.externalization.externalization.toExternalDictionary" )
-# deprecated( "isSyntheticKey", "Prefer nti.externalization.externalization.isSyntheticKey" )
-# deprecated( "to_external_representation", "Prefer nti.externalization.externalization.to_external_representation" )
-deprecated( "toExternalObject", "Prefer nti.externalization.externalization.toExternalObject" )
-# deprecated( "stripSyntheticKeysFromExternalDictionary", "Prefer nti.externalization.externalization.stripSyntheticKeysFromExternalDictionary" )
-# deprecated( "DefaultNonExternalizableReplacer", "Prefer nti.externalization.externalization.DefaultNonExternalizableReplacer" )
-# deprecated( "stripNoneFromExternal", "Prefer nti.externalization.externalization.stripNoneFromExternal" )
-# There may be persistent data referring to these still
-deprecated( "LocatedExternalList", "Prefer nti.externalization.datastructures.LocatedExternalList" )
-deprecated( "ExternalizableDictionaryMixin", "Prefer nti.externalization.datastructures.ExternalizableDictionaryMixin" )
-deprecated( "LocatedExternalDict", "Prefer nti.externalization.datastructures.LocatedExternalDict" )
-deprecated( "ExternalizableInstanceDict", "Prefer nti.externalization.datastructures.ExternalizableInstanceDict" )
-# deprecated( "isSyntheticKey", "Prefer nti.externalization.datastructures.isSyntheticKey" )
-deprecated( "PersistentExternalizableDictionary", "Prefer nti.externalization.persistence.PersistentExternalizableDictionary" )
-# deprecated( "getPersistentState", "Prefer nti.externalization.persistence.getPersistentState" )
-# deprecated( "setPersistentStateChanged", "Prefer nti.externalization.persistence.setPersistentStateChanged" )
-deprecated( "PersistentExternalizableWeakList", "Prefer nti.externalization.persistence.PersistentExternalizableWeakList" )
-deprecated( "PersistentExternalizableList", "Prefer nti.externalization.persistence.PersistentExternalizableList" )
+zope.deferredimport.deprecatedFrom(
+	"Code should not access this directly."
+	" The only valid use is existing ZODB objects",
+	"nti.zodb.minmax",
+	"MergingCounter")
+zope.deferredimport.deprecatedFrom(
+	"Code should not access this directly."
+	" The only valid use is existing ZODB objects",
+	"nti.externalization.datastructures",
+	"LocatedExternalList",
+	"LocatedExternalDict",
+	"ExternalizableDictionaryMixin",
+	"ExternalizableInstanceDict")
+zope.deferredimport.deprecatedFrom(
+	"Code should not access this directly."
+	" The only valid use is existing ZODB objects",
+	"nti.externalization.persistence",
+	"PersistentExternalizableDictionary"
+	"PersistentExternalizableList")
