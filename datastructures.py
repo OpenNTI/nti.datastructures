@@ -830,5 +830,5 @@ zope.deferredimport.deprecatedFrom(
 	"Code should not access this directly."
 	" The only valid use is existing ZODB objects",
 	"nti.externalization.persistence",
-	"PersistentExternalizableDictionary"
+	"PersistentExternalizableDictionary",
 	"PersistentExternalizableList")
