@@ -184,6 +184,7 @@
 	<subscriber handler=".sessions._decrement_count_for_dead_socket" />
 
 	<subscriber handler="._Dataserver._process_did_fork_listener" />
+	<subscriber handler="._Dataserver._after_database_opened_listener" />
 	<subscriber handler=".session_storage._create_sessions_for_new_user" />
 	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
 	<subscriber handler=".sharing.SharingSourceMixin_dynamicsharingtargetdeleted" />
