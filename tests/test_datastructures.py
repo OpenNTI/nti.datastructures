@@ -252,7 +252,7 @@ class TestToExternalObject(mock_dataserver.SharedConfiguringTestBase):
 		class Test(object):
 			interface.implements(ITest,IExternalObject)
 
-			def toExternalObject(self):
+			def toExternalObject(self, **kwargs):
 				return {}
 
 		test = Test()
