@@ -309,7 +309,7 @@ ContainedMixin = ZContainedMixin = _ContainedMixin
 # be compatible and work as expected.
 zope.deferredimport.deprecatedFrom(
 	"Use the container classes instead",
-	"nti.dataserver.container",
+	"nti.dataserver.containers",
 	"ModDateTrackingBTreeContainer",
 	"KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer")
 
