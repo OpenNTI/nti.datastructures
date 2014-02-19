@@ -24,6 +24,7 @@ from nose.tools import assert_raises
 from nti.testing.base import AbstractTestBase
 
 import collections
+import unittest
 
 import persistent
 from nti.externalization.oids import to_external_ntiid_oid
@@ -119,7 +120,9 @@ class TestPersistentExternalizableWeakList(AbstractTestBase):
 		assert_that( l, is_( [c1, c2, c3] ) )
 		assert_that( l, is_(l) )
 
-class TestContainedStorage(mock_dataserver.SharedConfiguringTestBase):
+class TestContainedStorage(unittest.TestCase):
+
+	layer = mock_dataserver.SharedConfiguringTestLayer
 
 	class C(CreatedModDateTrackingObject,ZContainedMixin):
 		def to_container_key(self):
@@ -245,7 +248,9 @@ from zope import interface, component
 from nti.externalization.interfaces import IExternalObject, IExternalObjectDecorator
 
 
-class TestToExternalObject(mock_dataserver.SharedConfiguringTestBase):
+class TestToExternalObject(unittest.TestCase):
+
+	layer = mock_dataserver.SharedConfiguringTestLayer
 
 	def test_decorator(self):
 		class ITest(interface.Interface): pass
