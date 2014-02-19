@@ -51,6 +51,9 @@
 	<utility factory="z3c.password.password.TrivialPasswordUtility"
 		 zcml:condition="have devmode" />
 
+	<!-- Simple dependency management -->
+	<include package="zope.app.dependable" />
+
 	<!-- Entries in the Zope root principal registry -->
 	<!--
 		 Note that we choose names that match pyramid
