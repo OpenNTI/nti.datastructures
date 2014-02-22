@@ -11,10 +11,19 @@ __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-from hamcrest import (assert_that, is_, has_entry, instance_of )
-from hamcrest import  is_in, not_none, is_not, greater_than, less_than
+#disable: accessing protected members, too many methods
+#pylint: disable=W0212,R0904
+
+from hamcrest import assert_that
+from hamcrest import is_
+from hamcrest import instance_of
+from hamcrest import is_in
+from hamcrest import not_none
+from hamcrest import is_not
+from hamcrest import greater_than
+
 does_not = is_not
-from hamcrest import greater_than_or_equal_to,  has_item
+from hamcrest import greater_than_or_equal_to
 from hamcrest import same_instance
 from hamcrest import has_key
 from hamcrest.library import has_property as has_attr
@@ -23,8 +32,8 @@ from nose.tools import assert_raises
 
 from nti.testing.base import AbstractTestBase
 
-import collections
-import unittest
+
+
 
 import persistent
 from nti.externalization.oids import to_external_ntiid_oid
@@ -33,7 +42,7 @@ import nti.deprecated
 with nti.deprecated.hiding_warnings():
 	from nti.dataserver.datastructures import ModDateTrackingObject
 	from nti.dataserver.datastructures import LastModifiedCopyingUserList
-	from nti.dataserver.datastructures import ContainedStorage, ContainedMixin, ZContainedMixin, CreatedModDateTrackingObject
+	from nti.dataserver.datastructures import ContainedStorage, ZContainedMixin, CreatedModDateTrackingObject
 
 	from nti.externalization.externalization import toExternalObject
 	from nti.externalization.oids import toExternalOID
@@ -45,33 +54,35 @@ with nti.deprecated.hiding_warnings():
 	from nti.dataserver import interfaces as nti_interfaces
 	from nti.ntiids import ntiids
 
-def test_containedmixins():
-	cm = ZContainedMixin()
-	assert_that( cm, verifiably_provides( nti_interfaces.IContained ) )
-	assert_that( cm, verifiably_provides( nti_interfaces.IZContained ) )
+class TestMisc(AbstractTestBase):
 
-def test_moddatetrackingobject_oldstates():
-	mto = ModDateTrackingObject()
-	assert_that( mto.lastModified, is_( 0 ) )
-	assert_that( mto.__dict__, does_not( has_key( '_lastModified' ) ) )
+	def test_containedmixins(self):
+		cm = ZContainedMixin()
+		assert_that( cm, verifiably_provides( nti_interfaces.IContained ) )
+		assert_that( cm, verifiably_provides( nti_interfaces.IZContained ) )
 
-	# old state
-	mto.__setstate__( {'_lastModified': 32 } )
-	assert_that( mto.lastModified, is_( 32 ) )
+	def test_moddatetrackingobject_oldstates(self):
+		mto = ModDateTrackingObject()
+		assert_that( mto.lastModified, is_( 0 ) )
+		assert_that( mto.__dict__, does_not( has_key( '_lastModified' ) ) )
 
-	# updates dynamically
-	mto.updateLastMod(42)
-	assert_that( mto.lastModified, is_( 42 ) )
-	assert_that( mto._lastModified, has_attr( 'value', 42 ) )
+		# old state
+		mto.__setstate__( {'_lastModified': 32 } )
+		assert_that( mto.lastModified, is_( 32 ) )
 
-	# missing entirely
-	del mto._lastModified
-	assert_that( mto.lastModified, is_( 0 ) )
-	mto.updateLastMod( 42 )
-	assert_that( mto.lastModified, is_( 42 ) )
-	assert_that( mto._lastModified, has_attr( 'value', 42 ) )
+		# updates dynamically
+		mto.updateLastMod(42)
+		assert_that( mto.lastModified, is_( 42 ) )
+		assert_that( mto._lastModified, has_attr( 'value', 42 ) )
 
-	mto._lastModified.__getstate__()
+		# missing entirely
+		del mto._lastModified
+		assert_that( mto.lastModified, is_( 0 ) )
+		mto.updateLastMod( 42 )
+		assert_that( mto.lastModified, is_( 42 ) )
+		assert_that( mto._lastModified, has_attr( 'value', 42 ) )
+
+		mto._lastModified.__getstate__()
 
 class TestLastModifiedCopyingUserList(AbstractTestBase):
 
