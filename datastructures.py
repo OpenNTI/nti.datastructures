@@ -46,6 +46,7 @@ import nti.externalization.interfaces as ext_interfaces
 
 from nti.zodb import minmax
 from nti.zodb.persistentproperty import PersistentPropertyHolder
+from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
 from . import links
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
@@ -337,6 +338,23 @@ def check_contained_object_for_storage( contained ):
 	if not getattr( contained, 'containerId' ):
 		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
 
+
+
+class _VolatileFunctionProperty(PropertyHoldingPersistent):
+
+	def __init__(self, volatile_name, default=_noop):
+		self.volatile_name = volatile_name
+		self.default = default
+
+	def __get__(self, instance, owner):
+		if instance is None:
+			return self
+
+		return getattr(instance, self.volatile_name, self.default)
+
+	def __set__(self, instance, value):
+		setattr(instance, self.volatile_name, value)
+
 @interface.implementer(nti_interfaces.IZContained, loc_interfaces.ISublocations)
 class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	"""
@@ -467,28 +485,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		if not hasattr( self, 'set_ids' ):
 			self.set_ids = True
 		self._setup()
-
-	def __setattr__( self, name, value ):
-		# We can be called from __new__, and if we are subclassing
-		# the pure-python version of Persistent, then we may not be able
-		# to read _p_changed just yet (because we haven't even set the jar!)
-		# Just skip everything for those properties
-		if name.startswith('_Persistent'):
-			super(ContainedStorage,self).__setattr__( name, value )
-			return
-
-		changed = self._p_changed
-		super(ContainedStorage,self).__setattr__( name, value )
-		# Our volatile attributes should not upset our changed state!
-		# Unfortunately, we really have to force this.
-		if not changed and (name.startswith( '_v_') or name in ('afterAddContainedObject',
-															   'afterGetContainedObject',
-															   'afterDeleteContainedObject')):
-			self._p_changed = False
-			if self._p_jar \
-				and self in getattr( self._p_jar, '_registered_objects', ()) \
-				and self not in getattr( self._p_jar, '_added', () ):
-				getattr( self._p_jar, '_registered_objects' ).remove( self )
 
 	def addContainer( self, containerId, container, locate=True ):
 		"""
@@ -630,17 +626,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		if callable( up ):
 			up( self.lastModified )
 
-	@property
-	def afterAddContainedObject( self ):
-		if hasattr( self, '_v_afterAdd' ):
-			# We have a default value for this, but it
-			# vanishes when we're persisted
-			return self._v_afterAdd
-		return _noop
-
-	@afterAddContainedObject.setter
-	def afterAddContainedObject( self, o ):
-		self._v_afterAdd = o
+	afterAddContainedObject = _VolatileFunctionProperty('_v_afterAdd')
 
 	def deleteContainedObject( self, containerId, containedId ):
 		"""
@@ -711,15 +697,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			self.afterDeleteContainedObject( contained )
 			return contained
 
-	@property
-	def afterDeleteContainedObject( self ):
-		if hasattr( self, '_v_afterDel' ):
-			return self._v_afterDel
-		return _noop
-
-	@afterDeleteContainedObject.setter
-	def afterDeleteContainedObject( self, o ):
-		self._v_afterDel = o
+	afterDeleteContainedObject = _VolatileFunctionProperty('_v_afterDel')
 
 	def getContainedObject( self, containerId, containedId, defaultValue=None ):
 		""" Given a container ID and an id within that container,
@@ -738,16 +716,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			self.afterGetContainedObject( result )
 		return result
 
-	@property
-	def afterGetContainedObject( self ):
-		if hasattr( self, '_v_afterGet' ):
-			return self._v_afterGet
-		return _noop
-
-	@afterGetContainedObject.setter
-	def afterGetContainedObject( self, o ):
-		self._v_afterGet = o
-
+	afterGetContainedObject = _VolatileFunctionProperty('_v_afterGet')
 
 	def __iter__(self):
 		return iter(self.containers)

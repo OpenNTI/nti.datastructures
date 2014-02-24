@@ -21,18 +21,21 @@ from hamcrest import is_in
 from hamcrest import not_none
 from hamcrest import is_not
 from hamcrest import greater_than
+from hamcrest import none
+from hamcrest import has_item
+from hamcrest import has_entry
+from nti.testing.matchers import is_empty
 
 does_not = is_not
 from hamcrest import greater_than_or_equal_to
 from hamcrest import same_instance
 from hamcrest import has_key
-from hamcrest.library import has_property as has_attr
+from hamcrest.library import has_property
+has_attr = has_property
 import unittest
 from nose.tools import assert_raises
 
 from nti.testing.base import AbstractTestBase
-
-
 
 
 import persistent
@@ -131,9 +134,7 @@ class TestPersistentExternalizableWeakList(AbstractTestBase):
 		assert_that( l, is_( [c1, c2, c3] ) )
 		assert_that( l, is_(l) )
 
-class TestContainedStorage(unittest.TestCase):
-
-	layer = mock_dataserver.SharedConfiguringTestLayer
+class TestContainedStorage(mock_dataserver.DataserverLayerTest):
 
 	class C(CreatedModDateTrackingObject,ZContainedMixin):
 		def to_container_key(self):
@@ -216,6 +217,33 @@ class TestContainedStorage(unittest.TestCase):
 		cs.deleteContainedObject( obj.containerId, obj.id )
 
 		assert_that( cs.lastModified, is_( greater_than_or_equal_to( lm_add ) ) )
+
+	@mock_dataserver.WithMockDS
+	def test_volatile_attributes(self):
+		with mock_dataserver.mock_db_trans(self.ds):
+			cs = ContainedStorage( )
+			self.ds.root['key'] = cs
+
+			assert_that( cs._p_jar, has_property('_registered_objects',
+												 has_item( cs )))
+			assert_that( cs._p_jar, has_property('_added',
+												 has_entry( cs._p_oid, cs  )))
+
+		with mock_dataserver.mock_db_trans(self.ds):
+			cs = self.ds.root['key']
+			assert_that( cs, has_property('_p_changed', none()))
+
+
+			cs.afterAddContainedObject = lambda *args: None
+			cs.afterGetContainedObject = lambda *args: None
+			cs.afterDeleteContainedObject = lambda *args: None
+
+			assert_that( cs, has_property('_p_changed', False) )
+
+			assert_that( cs._p_jar, has_property('_registered_objects',
+												 does_not( has_item( cs ))) )
+			assert_that( cs._p_jar, has_property('_added',
+												 is_empty() ) )
 
 	@mock_dataserver.WithMockDSTrans
 	def test_id_is_ntiid(self):
