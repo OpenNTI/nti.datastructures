@@ -469,6 +469,14 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		self._setup()
 
 	def __setattr__( self, name, value ):
+		# We can be called from __new__, and if we are subclassing
+		# the pure-python version of Persistent, then we may not be able
+		# to read _p_changed just yet (because we haven't even set the jar!)
+		# Just skip everything for those properties
+		if name.startswith('_Persistent'):
+			super(ContainedStorage,self).__setattr__( name, value )
+			return
+
 		changed = self._p_changed
 		super(ContainedStorage,self).__setattr__( name, value )
 		# Our volatile attributes should not upset our changed state!
