@@ -355,6 +355,8 @@
 			 provides=".interfaces.IGroup"
 			 name="system.Authenticated" />
 
+	<adapter factory=".interfaces.DefaultCreatedUsername" />
+
 	<!-- ACL/ACE permissions -->
 	<include package="." file="configure_acls.zcml" />
 
