@@ -44,7 +44,8 @@
 	<include package="zope.preference" />
 
 	<!-- Hashed password management. Includes zope.password -->
-	<include package="z3c.bcrypt" />
+	<include package="z3c.bcrypt"
+			 zcml:condition="installed cryptacular.bcrypt"/>
 	<include package="z3c.password" />
 
 	<!-- Trivial password policy utility for devmode -->
@@ -120,9 +121,11 @@
 	<!-- It requires i18n support, but we disable its browser support -->
 	<include package="zope.i18n" file="meta.zcml" />
 	<exclude package="contentratings.browser" />
-	<include package="contentratings" />
-	<include package="contentratings" file="meta.zcml" />
-	<configure xmlns:contentratings="http://namespaces.plone.org/contentratings">
+	<configure xmlns:contentratings="http://namespaces.plone.org/contentratings"
+			   zcml:condition="installed Acquisition" >
+		<include package="contentratings" file="meta.zcml" />
+		<include package="contentratings" />
+
 		<contentratings:category
 			for=".interfaces.ILikeable"
 			title="Likes"
