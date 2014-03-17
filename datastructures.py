@@ -14,7 +14,6 @@ import time
 import logging
 import numbers
 import weakref
-import datetime
 import collections
 
 import BTrees.OOBTree
@@ -34,13 +33,11 @@ from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
 from zope.container import contained as zcontained
 
-from zope.dublincore import interfaces as dc_interfaces
-
 from zope.location import locate as loc_locate
 from zope.location import interfaces as loc_interfaces
 
-from nti.dataserver import containers as container
-from nti.dataserver import interfaces as nti_interfaces
+from . import containers as container
+from . import interfaces as nti_interfaces
 
 import nti.externalization.interfaces as ext_interfaces
 
@@ -168,8 +165,8 @@ class LinkNonExternalizableReplacer(object):
 	def __call__( self, link ):
 		return link
 
-@interface.implementer(dc_interfaces.IDCTimes)
-class CreatedModDateTrackingObject(ModDateTrackingObject):
+class CreatedModDateTrackingObject(ModDateTrackingObject,
+								   nti_interfaces.DCTimesLastModifiedMixin):
 	""" Adds the `creator` and `createdTime` attributes. """
 	def __init__( self, *args, **kwargs ):
 		self.createdTime = time.time()
@@ -187,10 +184,6 @@ class CreatedModDateTrackingObject(ModDateTrackingObject):
 				# isn't available yet
 				pass
 
-	created = property( lambda self: datetime.datetime.fromtimestamp( self.createdTime ),
-						lambda self, dt: setattr( self, 'createdTime', time.mktime( dt.timetuple() ) ) )
-	modified = property( lambda self: datetime.datetime.fromtimestamp( self.lastModified ),
-						lambda self, dt: self.updateLastModIfGreater( time.mktime( dt.timetuple() ) ) )
 
 class PersistentCreatedModDateTrackingObject(CreatedModDateTrackingObject,PersistentPropertyHolder):
 	# order of inheritance matters; if Persistent is first, we can't have our own __setstate__;
