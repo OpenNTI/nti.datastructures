@@ -62,7 +62,7 @@ class ModDateTrackingObject(object):
 	Typically subclasses of this class should be :class:`nti.zodb.persistentproperty.PersistentPropertyHolder`
 	"""
 
-	lastModified = minmax.NumericPropertyDefaultingToZero( '_lastModified', minmax.NumericMaximum, as_number=True )
+	lastModified = minmax.NumericPropertyDefaultingToZero( str('_lastModified'), minmax.NumericMaximum, as_number=True )
 
 	def __new__( cls, *args, **kwargs ):
 		if issubclass(cls, persistent.Persistent) and not issubclass(cls, PersistentPropertyHolder):
