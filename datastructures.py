@@ -788,14 +788,21 @@ zope.deferredimport.deprecatedFrom(
 	" The only valid use is existing ZODB objects",
 	"nti.zodb.minmax",
 	"MergingCounter")
+
+zope.deferredimport.deprecatedFrom(
+	"Code should not access this directly."
+	" The only valid use is existing ZODB objects",
+	"nti.externalization.interfaces",
+	"LocatedExternalList",
+	"LocatedExternalDict")
+
 zope.deferredimport.deprecatedFrom(
 	"Code should not access this directly."
 	" The only valid use is existing ZODB objects",
 	"nti.externalization.datastructures",
-	"LocatedExternalList",
-	"LocatedExternalDict",
 	"ExternalizableDictionaryMixin",
 	"ExternalizableInstanceDict")
+
 zope.deferredimport.deprecatedFrom(
 	"Code should not access this directly."
 	" The only valid use is existing ZODB objects",
