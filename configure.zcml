@@ -293,6 +293,9 @@
 	<adapter factory=".authorization._UserGroupAwarePrincipal"
 			 provides=".interfaces.IGroupAwarePrincipal"
 			 for=".interfaces.IUser" />
+	<!-- We can also have a participation for the user -->
+	<adapter factory=".authorization._participation_for_user" />
+
 	<!--
 		 And we can get back from that to something that is
 		 annotatable -->
