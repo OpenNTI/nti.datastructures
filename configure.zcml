@@ -20,6 +20,10 @@
 	<include package="zope.traversing" />
 	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
+	<!--
+	Note that this gives us a default IAuthentication object in
+	the global registry. (We need a persistent implementation)
+	-->
 	<include package="zope.principalregistry" />
 	<include package="zope.vocabularyregistry" />
 
