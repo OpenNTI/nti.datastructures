@@ -41,7 +41,6 @@ from . import interfaces as nti_interfaces
 
 import nti.externalization.interfaces as ext_interfaces
 
-from nti.zodb import minmax
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
@@ -55,48 +54,7 @@ from nti.externalization.externalization import toExternalObject
 from nti.externalization.persistence import PersistentExternalizableWeakList as _PersistentExternalizableWeakList
 from nti.externalization.persistence import PersistentExternalizableList as _PersistentExternalizableList
 
-class ModDateTrackingObject(object):
-	"""
-	Maintains an lastModified attribute containing a time.time()
-	modification stamp. Use updateLastMod() to update this value.
-	Typically subclasses of this class should be :class:`nti.zodb.persistentproperty.PersistentPropertyHolder`
-	"""
-
-	lastModified = minmax.NumericPropertyDefaultingToZero( str('_lastModified'), minmax.NumericMaximum, as_number=True )
-
-	def __new__( cls, *args, **kwargs ):
-		if issubclass(cls, persistent.Persistent) and not issubclass(cls, PersistentPropertyHolder):
-			print("ERROR: subclassing Persistent, but not PersistentPropertyHolder", cls)
-		return super(ModDateTrackingObject,cls).__new__( cls, *args, **kwargs )
-
-	def __init__( self, *args, **kwargs ):
-		super(ModDateTrackingObject,self).__init__( *args, **kwargs )
-
-	def __setstate__(self, data):
-		if isinstance(data, collections.Mapping) and '_lastModified' in data and isinstance(data['_lastModified'], numbers.Number):
-			# Are there actually any objects still around that have this condition?
-			# A migration to find them is probably difficult
-			data['_lastModified'] = minmax.NumericMaximum(data['_lastModified'])
-		elif isinstance(data, (float, int)):  # Not sure why we get float here
-			data = {'_lastModified':minmax.NumericMaximum('data')}
-
-		# We may or may not be the base of the inheritance tree; usually we are not,
-		# but occasionally (mostly in tests) we are
-		try:
-			super(ModDateTrackingObject, self).__setstate__(data)
-		except AttributeError:
-			self.__dict__.clear()
-			self.__dict__.update(data)
-
-	def updateLastMod(self, t=None ):
-		self.lastModified = ( t if t is not None and t > self.lastModified else time.time() )
-		return self.lastModified
-
-	def updateLastModIfGreater( self, t ):
-		"Only if the given time is (not None and) greater than this object's is this object's time changed."
-		if t is not None and t > self.lastModified:
-			self.lastModified = t
-		return self.lastModified
+from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
 
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
@@ -165,13 +123,11 @@ class LinkNonExternalizableReplacer(object):
 	def __call__( self, link ):
 		return link
 
-class CreatedModDateTrackingObject(ModDateTrackingObject,
-								   nti_interfaces.DCTimesLastModifiedMixin):
+from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
+
+class CreatedModDateTrackingObject(CreatedAndModifiedTimeMixin):
 	""" Adds the `creator` and `createdTime` attributes. """
 	def __init__( self, *args, **kwargs ):
-		self.createdTime = time.time()
-		self.updateLastModIfGreater( self.createdTime )
-
 		super(CreatedModDateTrackingObject,self).__init__( *args, **kwargs )
 
 		# Some of our subclasses have class attributes for fixed creators.
