@@ -221,7 +221,7 @@ class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,
 		self.updateLastMod()
 		return rtn
 
-from nti.utils.schema import UnicodeConvertingFieldProperty
+from nti.schema.fieldproperty import UnicodeConvertingFieldProperty
 
 @interface.implementer(nti_interfaces.IContained)
 class _ContainedMixin(zcontained.Contained):
