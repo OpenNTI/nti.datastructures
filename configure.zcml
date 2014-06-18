@@ -36,6 +36,8 @@
 	-->
 	<subscriber handler=".site.threadSiteSubscriber" />
 
+	<subscriber handler=".site.new_local_site_dispatcher" />
+
 	<include package="zope.i18n" />
 
 	<include package="zope.generations" />
