@@ -27,16 +27,6 @@
 	<include package="zope.principalregistry" />
 	<include package="zope.vocabularyregistry" />
 
-	<!--
-	Our own version of zope.site.threadSiteSubscriber
-	that is careful to preserve any of our non-persistent host-based
-	configuration needed.
-
-	The zope.site version is registered by zope.app.publication
-	-->
-	<subscriber handler=".site.threadSiteSubscriber" />
-
-	<subscriber handler=".site.new_local_site_dispatcher" />
 
 	<include package="zope.i18n" />
 
@@ -60,6 +50,9 @@
 
 	<!-- Simple dependency management -->
 	<include package="zope.app.dependable" />
+
+
+	<include package="nti.site" />
 
 	<!-- Entries in the Zope root principal registry -->
 	<!--
@@ -147,8 +140,6 @@
 			 name="nti.dataserver"
 			 provides="zope.generations.interfaces.IInstallableSchemaManager"/>
 
-	<!-- Database transactions -->
-	<utility component=".site.run_job_in_site" />
 	<adapter factory="._Dataserver.ExternalRefResolverFactory" />
 
 	<!-- Database shards -->
