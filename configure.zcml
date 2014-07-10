@@ -337,4 +337,10 @@
 	<!-- Weak refs -->
 	<include package="." file="configure_weakrefs.zcml" />
 
+	<!-- Additional/plugin packages -->
+	<!-- The ones directly mentioned are part of this distribution until they get moved out -->
+
+	<include package="z3c.autoinclude" file="meta.zcml" />
+	<includePlugins package="." />
+
 </configure>
