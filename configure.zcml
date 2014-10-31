@@ -328,27 +328,7 @@
 	<adapter factory=".interfaces.DefaultCreatedUsername" />
 
 	<!-- Notable filters -->
-	<subscriber factory=".notables.BlogNotableFilter"
-				provides=".interfaces.INotableFilter"
-				for="*" />
-
-	<subscriber factory=".notables.AssignmentGradeNotableFilter"
-				provides=".interfaces.INotableFilter"
-				for="*" />
-
-	<subscriber factory=".notables.AssignmentFeedbackNotableFilter"
-				provides=".interfaces.INotableFilter"
-				for="*" />
-
 	<subscriber factory=".notables.ReplyToNotableFilter"
-				provides=".interfaces.INotableFilter"
-				for="*" />
-
-	<subscriber factory=".notables.TopLevelPriorityNotableFilter"
-				provides=".interfaces.INotableFilter"
-				for="*" />
-
-	<subscriber factory=".notables.TopLevelNotableFilter"
 				provides=".interfaces.INotableFilter"
 				for="*" />
 
