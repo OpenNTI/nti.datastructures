@@ -3,31 +3,23 @@
 """
 Datatypes and datatype handling.
 
-$Id$
+.. $Id$
 """
 from __future__ import print_function, unicode_literals, absolute_import
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
 
-import time
 import logging
-import numbers
 import weakref
 import collections
 
 import BTrees.OOBTree
 
-import persistent
 from persistent.wref import WeakRef
-
-import ZODB
 
 from zope import interface
 from zope import component
-
-import zope.deferredimport
-zope.deferredimport.initialize()
 
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
@@ -36,25 +28,29 @@ from zope.container import contained as zcontained
 from zope.location import locate as loc_locate
 from zope.location import interfaces as loc_interfaces
 
-from . import containers as container
-from . import interfaces as nti_interfaces
+from ZODB.interfaces import IBroken
+from ZODB.POSException import POSError
+
+from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
 
 import nti.externalization.interfaces as ext_interfaces
+from nti.externalization.oids import to_external_ntiid_oid
+from nti.externalization.singleton import SingletonDecorator
+from nti.externalization.externalization import toExternalObject
+from nti.externalization.persistence import PersistentExternalizableList as _PersistentExternalizableList
+from nti.externalization.persistence import PersistentExternalizableWeakList as _PersistentExternalizableWeakList
 
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
+from . import containers as container
+from . import interfaces as nti_interfaces
+
 from . import links
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
 
-
-from nti.externalization.oids import to_external_ntiid_oid
-from nti.externalization.singleton import SingletonDecorator
-from nti.externalization.externalization import toExternalObject
-from nti.externalization.persistence import PersistentExternalizableWeakList as _PersistentExternalizableWeakList
-from nti.externalization.persistence import PersistentExternalizableList as _PersistentExternalizableList
-
-from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
+import zope.deferredimport
+zope.deferredimport.initialize()
 
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
@@ -140,19 +136,16 @@ class CreatedModDateTrackingObject(CreatedAndModifiedTimeMixin):
 				# isn't available yet
 				pass
 
-
 class PersistentCreatedModDateTrackingObject(CreatedModDateTrackingObject,PersistentPropertyHolder):
 	# order of inheritance matters; if Persistent is first, we can't have our own __setstate__;
 	# only subclasses can
 	pass
 
-
 # Commented out while we check for this case
-#zope.deferredimport.deprecatedFrom(
+# zope.deferredimport.deprecatedFrom(
 #	"The implementation here was broken and exists only for BWC",
 #	"nti.dataserver.container",
 #	"_CaseInsensitiveKey")
-
 
 collections.Mapping.register( BTrees.OOBTree.OOBTree )
 
@@ -524,7 +517,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 					if existing is contained:
 						return existing # Nothing more do do
 					# OK, so it's not contained. Is it broken?
-					if ZODB.interfaces.IBroken not in interface.providedBy( existing ):
+					if IBroken not in interface.providedBy( existing ):
 						__traceback_info__ = contained, existing
 						raise KeyError( "Contained object uses existing ID " + str(contained.id) )
 
@@ -667,6 +660,26 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 
 	afterGetContainedObject = _VolatileFunctionProperty('_v_afterGet')
 
+	def cleanUp(self, remove_broken=True):
+		for container in list(self.itervalues()):
+			is_mapping = isinstance(container, collections.Mapping)
+			if not is_mapping:
+				continue
+			for name, value in list(container.items()):
+				try:
+					value = self._v_wrap(value)
+					if value is not None:
+						if IBroken.providedBy(value): 
+							if remove_broken:
+								del container[name]
+						elif hasattr(value, '_p_activate'):
+							value._p_activate()
+				except POSError:
+					if remove_broken:
+						del container[name]
+					else:
+						logger.error("ignoring broken object %s,%r", name, value)
+			
 	def __iter__(self):
 		return iter(self.containers)
 
