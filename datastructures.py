@@ -660,7 +660,8 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 
 	afterGetContainedObject = _VolatileFunctionProperty('_v_afterGet')
 
-	def cleanUp(self, remove_broken=True):
+	def cleanBroken(self):
+		result = 0
 		for container in list(self.itervalues()):
 			is_mapping = isinstance(container, collections.Mapping)
 			if not is_mapping:
@@ -670,15 +671,17 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 					value = self._v_wrap(value)
 					if value is not None:
 						if IBroken.providedBy(value): 
-							if remove_broken:
-								del container[name]
+							del container[name]
+							result +=1
 						elif hasattr(value, '_p_activate'):
 							value._p_activate()
 				except POSError:
 					if remove_broken:
 						del container[name]
+						result +=1
 					else:
 						logger.error("ignoring broken object %s,%r", name, value)
+		return result
 			
 	def __iter__(self):
 		return iter(self.containers)

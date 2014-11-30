@@ -1,62 +1,62 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
 
-
-$Id$
-"""
-
-from __future__ import print_function, unicode_literals, absolute_import
+from __future__ import print_function, unicode_literals, absolute_import, division
+from hamcrest.library.object.haslength import has_length
 __docformat__ = "restructuredtext en"
 
-logger = __import__('logging').getLogger(__name__)
+# disable: accessing protected members, too many methods
+# pylint: disable=W0212,R0904
 
-#disable: accessing protected members, too many methods
-#pylint: disable=W0212,R0904
-
-from hamcrest import assert_that
 from hamcrest import is_
-from hamcrest import instance_of
-from hamcrest import is_in
-from hamcrest import not_none
-from hamcrest import is_not
-from hamcrest import greater_than
 from hamcrest import none
+from hamcrest import is_in
+from hamcrest import is_not
+from hamcrest import has_key
+from hamcrest import not_none
 from hamcrest import has_item
 from hamcrest import has_entry
+from hamcrest import instance_of
+from hamcrest import assert_that
+from hamcrest import greater_than
+from hamcrest import has_property
+from hamcrest import same_instance
+from hamcrest import greater_than_or_equal_to
+does_not = is_not
+has_attr = has_property
+
 from nti.testing.matchers import is_empty
 
-does_not = is_not
-from hamcrest import greater_than_or_equal_to
-from hamcrest import same_instance
-from hamcrest import has_key
-from hamcrest.library import has_property
-has_attr = has_property
 import unittest
+
+from ZODB.interfaces import IBroken
+
+import nti.deprecated
+
+from nti.externalization.oids import to_external_ntiid_oid
+
 from nose.tools import assert_raises
 
 from nti.testing.base import AbstractTestBase
 
-
-import persistent
-from nti.externalization.oids import to_external_ntiid_oid
-import nti.deprecated
-
 with nti.deprecated.hiding_warnings():
-	from nti.dataserver.datastructures import ModDateTrackingObject
-	from nti.dataserver.datastructures import LastModifiedCopyingUserList
-	from nti.dataserver.datastructures import ContainedStorage, ZContainedMixin, CreatedModDateTrackingObject
-
-	from nti.externalization.externalization import toExternalObject
-	from nti.externalization.oids import toExternalOID
-
-
-	from nti.testing.matchers import validly_provides as verifiably_provides
-	from . import mock_dataserver
 	from nti.dataserver import contenttypes
 	from nti.dataserver import interfaces as nti_interfaces
-	from nti.ntiids import ntiids
 
+	from nti.dataserver.datastructures import ModDateTrackingObject
+	from nti.dataserver.datastructures import LastModifiedCopyingUserList
+	from nti.dataserver.datastructures import CreatedModDateTrackingObject
+	from nti.dataserver.datastructures import ContainedStorage, ZContainedMixin
+
+	from nti.externalization.oids import toExternalOID
+	from nti.externalization.externalization import toExternalObject
+	
+	from nti.ntiids import ntiids
+	
+	from . import mock_dataserver
+
+	from nti.testing.matchers import validly_provides as verifiably_provides
+	
 class TestMisc(AbstractTestBase):
 
 	def test_containedmixins(self):
@@ -112,7 +112,12 @@ class TestLastModifiedCopyingUserList(AbstractTestBase):
 		l += LastModifiedCopyingUserList([1,2,3])
 		assert_that( l.lastModified, is_( 0 ) )
 		assert_that( l, is_([1,2,3]) )
-from nti.externalization.persistence import PersistentExternalizableWeakList, PersistentExternalizableList
+
+import persistent
+
+from nti.externalization.persistence import PersistentExternalizableList
+from nti.externalization.persistence import PersistentExternalizableWeakList
+
 class TestPersistentExternalizableWeakList(AbstractTestBase):
 
 	def test_plus_extend( self ):
@@ -280,12 +285,28 @@ class TestContainedStorage(mock_dataserver.DataserverLayerTest):
 		assert_that( ntiid.nttype, is_( ntiids.TYPE_OID ) )
 		assert_that( ntiid.specific, is_( toExternalOID( obj ) ) )
 
+	@mock_dataserver.WithMockDSTrans
+	def test_cleanup(self):
+		cs = ContainedStorage()
+		mock_dataserver.current_transaction.add( cs )
+
+		obj = contenttypes.Note()
+		obj.containerId = 'foo'
+		cs.addContainedObject( obj )
+		container = cs.getContainer('foo')
+		assert_that(container, has_length(1))
+		
+		interface.alsoProvides(obj, IBroken)
+		
+		removed = cs.cleanBroken()
+		assert_that(removed, is_(1))
+		assert_that(container, has_length(0))
+		
 does_not = is_not
 
-
 from zope import interface, component
-from nti.externalization.interfaces import IExternalObject, IExternalObjectDecorator
 
+from nti.externalization.interfaces import IExternalObject, IExternalObjectDecorator
 
 class TestToExternalObject(unittest.TestCase):
 
