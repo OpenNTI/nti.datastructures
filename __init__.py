@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Functions and architecture for general activity streams.
+
+.. $Id$
+"""
 
 # Note that we're not exporting anything by importing it.
 # This helps reduce the chances of import cycles
