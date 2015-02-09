@@ -6,8 +6,8 @@ Functions and architecture for general activity streams.
 .. $Id$
 """
 
-# Note that we're not exporting anything by importing it.
-# This helps reduce the chances of import cycles
+## Note that we're not exporting anything by importing it.
+## This helps reduce the chances of import cycles
 
 from nti.monkey import traversing_patch_on_import
 traversing_patch_on_import.patch()
