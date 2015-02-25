@@ -31,14 +31,13 @@ from zope.location import interfaces as loc_interfaces
 from ZODB.interfaces import IBroken
 from ZODB.POSException import POSError
 
+from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
 from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
 
 import nti.externalization.interfaces as ext_interfaces
 from nti.externalization.oids import to_external_ntiid_oid
 from nti.externalization.singleton import SingletonDecorator
 from nti.externalization.externalization import toExternalObject
-from nti.externalization.persistence import PersistentExternalizableList as _PersistentExternalizableList
-from nti.externalization.persistence import PersistentExternalizableWeakList as _PersistentExternalizableWeakList
 
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
@@ -49,9 +48,6 @@ from . import interfaces as nti_interfaces
 from . import links
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
 
-import zope.deferredimport
-zope.deferredimport.initialize()
-
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
 
@@ -61,6 +57,7 @@ def _isMagicKey( key ):
 	return key in _syntheticKeys()
 
 isSyntheticKey = _isMagicKey
+CreatedAndModifiedTimeMixin = CreatedAndModifiedTimeMixin # pylint
 
 # For speed and use in this function, we declare an 'inline'-able attribute
 
@@ -118,29 +115,7 @@ class LinkNonExternalizableReplacer(object):
 
 	def __call__( self, link ):
 		return link
-
-from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
-
-class CreatedModDateTrackingObject(CreatedAndModifiedTimeMixin):
-	""" Adds the `creator` and `createdTime` attributes. """
-	def __init__( self, *args, **kwargs ):
-		super(CreatedModDateTrackingObject,self).__init__( *args, **kwargs )
-
-		# Some of our subclasses have class attributes for fixed creators.
-		# don't override those unless we have to
-		if not hasattr(self, 'creator'):
-			try:
-				self.creator = None
-			except AttributeError:
-				# A read-only property in the class dict that
-				# isn't available yet
-				pass
-
-class PersistentCreatedModDateTrackingObject(CreatedModDateTrackingObject,PersistentPropertyHolder):
-	# order of inheritance matters; if Persistent is first, we can't have our own __setstate__;
-	# only subclasses can
-	pass
-
+	
 # Commented out while we check for this case
 # zope.deferredimport.deprecatedFrom(
 #	"The implementation here was broken and exists only for BWC",
@@ -166,53 +141,6 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	def __reduce__( self ):
 		raise TypeError("Transient object.")
 
-# XXX
-# For BWC, we apply these properties to the base class too,
-# but the implementation is not correct as they do not get updated...
-_PersistentExternalizableList.__bases__ = (PersistentCreatedModDateTrackingObject,) + _PersistentExternalizableList.__bases__
-
-class PersistentExternalizableWeakList(_PersistentExternalizableWeakList,
-									   PersistentCreatedModDateTrackingObject):
-
-	"""
-	Stores :class:`persistent.Persistent` objects as weak references, invisibly to the user.
-	Any weak references added to the list will be treated the same.
-	"""
-
-	def remove(self,value):
-		super(PersistentExternalizableWeakList,self).remove( value )
-		self.updateLastMod()
-
-	def __setitem__(self, i, item):
-		super(PersistentExternalizableWeakList,self).__setitem__( i, item )
-		self.updateLastMod()
-
-	def __iadd__(self, other):
-		# We must wrap each element in a weak ref
-		# Note that the builtin list only accepts other lists,
-		# but the UserList from which we are descended accepts
-		# any iterable.
-		result = super(PersistentExternalizableWeakList,self).__iadd__(other)
-		self.updateLastMod()
-		return result
-
-	def __imul__(self, n):
-		result = super(PersistentExternalizableWeakList,self).__imul__(n)
-		self.updateLastMod()
-		return result
-
-	def append(self, item):
-		super(PersistentExternalizableWeakList,self).append(item)
-		self.updateLastMod()
-
-	def insert(self, i, item):
-		super(PersistentExternalizableWeakList,self).insert( i, item )
-		self.updateLastMod()
-
-	def pop(self, i=-1):
-		rtn = super(PersistentExternalizableWeakList,self).pop( i )
-		self.updateLastMod()
-		return rtn
 
 from nti.schema.fieldproperty import UnicodeConvertingFieldProperty
 
@@ -243,18 +171,6 @@ class _ContainedMixin(zcontained.Contained):
 			self.id = containedId
 
 ContainedMixin = ZContainedMixin = _ContainedMixin
-
-
-# These were very bad ideas that didn't work cleanly because
-# they tried to store attributes on the BTree itself, which
-# doesn't work. We define these deprecated aliases...the
-# implementation isn't quite the same but the pickles should basically
-# be compatible and work as expected.
-zope.deferredimport.deprecatedFrom(
-	"Use the container classes instead",
-	"nti.dataserver.containers",
-	"ModDateTrackingBTreeContainer",
-	"KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer")
 
 def _noop(*args): pass
 
@@ -753,6 +669,28 @@ class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContain
 class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsensitiveLastModifiedBTreeContainer,
 															 AbstractNamedLastModifiedBTreeContainer):
 	pass
+
+import zope.deferredimport
+zope.deferredimport.initialize()
+
+# These were very bad ideas that didn't work cleanly because
+# they tried to store attributes on the BTree itself, which
+# doesn't work. We define these deprecated aliases...the
+# implementation isn't quite the same but the pickles should basically
+# be compatible and work as expected.
+zope.deferredimport.deprecatedFrom(
+	"Use the container classes instead",
+	"nti.dataserver.containers",
+	"ModDateTrackingBTreeContainer",
+	"KeyPreservingCaseInsensitiveModDateTrackingBTreeContainer")
+
+zope.deferredimport.deprecatedFrom(
+	"Code should not access this directly."
+	" The only valid use is existing ZODB objects",
+	"nti.dublincore.datastructures",
+	"CreatedModDateTrackingObject",
+	"PersistentCreatedModDateTrackingObject",
+	"PersistentExternalizableWeakList")
 
 zope.deferredimport.deprecatedFrom(
 	"Code should not access this directly."
