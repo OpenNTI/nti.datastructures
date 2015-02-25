@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function, unicode_literals, absolute_import, division
-from hamcrest.library.object.haslength import has_length
 __docformat__ = "restructuredtext en"
 
 # disable: accessing protected members, too many methods
@@ -16,6 +15,7 @@ from hamcrest import has_key
 from hamcrest import not_none
 from hamcrest import has_item
 from hamcrest import has_entry
+from hamcrest import has_length
 from hamcrest import instance_of
 from hamcrest import assert_that
 from hamcrest import greater_than
@@ -25,13 +25,11 @@ from hamcrest import greater_than_or_equal_to
 does_not = is_not
 has_attr = has_property
 
-from nti.testing.matchers import is_empty
-
 import unittest
 
 from ZODB.interfaces import IBroken
 
-import nti.deprecated
+from nti.common.deprecated import hiding_warnings
 
 from nti.externalization.oids import to_external_ntiid_oid
 
@@ -39,15 +37,18 @@ from nose.tools import assert_raises
 
 from nti.testing.base import AbstractTestBase
 
-with nti.deprecated.hiding_warnings():
+from nti.testing.matchers import is_empty
+
+with hiding_warnings():
 	from nti.dataserver import contenttypes
 	from nti.dataserver import interfaces as nti_interfaces
 
 	from nti.dataserver.datastructures import ModDateTrackingObject
 	from nti.dataserver.datastructures import LastModifiedCopyingUserList
-	from nti.dataserver.datastructures import CreatedModDateTrackingObject
 	from nti.dataserver.datastructures import ContainedStorage, ZContainedMixin
 
+	from nti.dublincore.datastructures import CreatedModDateTrackingObject
+		
 	from nti.externalization.oids import toExternalOID
 	from nti.externalization.externalization import toExternalObject
 	
@@ -301,12 +302,11 @@ class TestContainedStorage(mock_dataserver.DataserverLayerTest):
 		removed = cs.cleanBroken()
 		assert_that(removed, is_(1))
 		assert_that(container, has_length(0))
-		
-does_not = is_not
 
 from zope import interface, component
 
-from nti.externalization.interfaces import IExternalObject, IExternalObjectDecorator
+from nti.externalization.interfaces import IExternalObject 
+from nti.externalization.interfaces import IExternalObjectDecorator
 
 class TestToExternalObject(unittest.TestCase):
 
@@ -321,7 +321,6 @@ class TestToExternalObject(unittest.TestCase):
 				return {}
 
 		test = Test()
-
 		assert_that( toExternalObject( test ), is_( {} ) )
 
 		class Decorator(object):
