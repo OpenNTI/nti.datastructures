@@ -23,7 +23,6 @@ from zope import component
 
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
-from zope.container import contained as zcontained
 
 from zope.location import locate as loc_locate
 from zope.location import interfaces as loc_interfaces
@@ -103,7 +102,6 @@ class LinkDecorator(object):
 		if _links:
 			result[StandardExternalFields.LINKS] = _links
 
-
 @interface.implementer(ext_interfaces.INonExternalizableReplacer)
 @component.adapter(ILink)
 class LinkNonExternalizableReplacer(object):
@@ -115,14 +113,9 @@ class LinkNonExternalizableReplacer(object):
 
 	def __call__( self, link ):
 		return link
-	
-# Commented out while we check for this case
-# zope.deferredimport.deprecatedFrom(
-#	"The implementation here was broken and exists only for BWC",
-#	"nti.dataserver.container",
-#	"_CaseInsensitiveKey")
 
-collections.Mapping.register( BTrees.OOBTree.OOBTree )
+mapping_register = getattr(collections.Mapping, 'register')
+mapping_register( BTrees.OOBTree.OOBTree )
 
 # See the notes in nti.dataserver.containers package. It's not safe to subclass btrees.
 # Consider zc.dict if necessary
@@ -141,36 +134,6 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 	def __reduce__( self ):
 		raise TypeError("Transient object.")
 
-
-from nti.schema.fieldproperty import UnicodeConvertingFieldProperty
-
-@interface.implementer(nti_interfaces.IContained)
-class _ContainedMixin(zcontained.Contained):
-	"""
-	Defines something that can be logically contained inside another unit
-	by reference. Two properties are defined, id and containerId.
-	"""
-
-	# It is safe to use these properties in persistent objects because
-	# they read/write to the __dict__ with the same name as the field,
-	# and setattr on the persistent object is what set _p_changed, so
-	# assigning to them still changes the object correctly
-	containerId = UnicodeConvertingFieldProperty(nti_interfaces.IContained['containerId'])
-	id = UnicodeConvertingFieldProperty(nti_interfaces.IContained['id'])
-
-	# __name__ is NOT automatically defined as an id alias, because that could lose
-	# access to existing data that has a __name__ in its instance dict
-
-	def __init__(self, *args, **kwargs ):
-		containerId = kwargs.pop( 'containerId', None )
-		containedId = kwargs.pop( 'containedId', None )
-		super(_ContainedMixin,self).__init__(*args, **kwargs)
-		if containerId is not None:
-			self.containerId = containerId
-		if containedId is not None:
-			self.id = containedId
-
-ContainedMixin = ZContainedMixin = _ContainedMixin
 
 def _noop(*args): pass
 
@@ -195,8 +158,6 @@ def check_contained_object_for_storage( contained ):
 
 	if not getattr( contained, 'containerId' ):
 		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
-
-
 
 class _VolatileFunctionProperty(PropertyHoldingPersistent):
 
@@ -630,7 +591,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	def __repr__( self ):
 		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
 
-
 @interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
 						nti_interfaces.INamedContainer,
 						nti_interfaces.ILastModified )
@@ -672,6 +632,13 @@ class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsen
 
 import zope.deferredimport
 zope.deferredimport.initialize()
+
+zope.deferredimport.deprecatedFrom(
+	"Moved to nti.dataserver.core.mixins",
+	"nti.dataserver.core.mixins",
+	"_ContainedMixin",
+	"ContainedMixin",
+	"ZContainedMixin")
 
 # These were very bad ideas that didn't work cleanly because
 # they tried to store attributes on the BTree itself, which
