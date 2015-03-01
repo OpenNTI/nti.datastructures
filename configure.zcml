@@ -20,13 +20,13 @@
 	<include package="zope.traversing" />
 	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
+	
 	<!--
 	Note that this gives us a default IAuthentication object in
 	the global registry. (We need a persistent implementation)
 	-->
 	<include package="zope.principalregistry" />
 	<include package="zope.vocabularyregistry" />
-
 
 	<include package="zope.i18n" />
 
@@ -124,13 +124,15 @@
 	<include package="nti.externalization" />
 
 	<include package="nti.zodb" />
+	<include package="nti.links" />
 	<include package="nti.mimetype" />
-	<include package=".contenttypes" />
 	<include package="nti.chatserver" />
 	<include package="nti.contentrange" />
 	<include package="nti.contentlibrary" />
 	<include package="nti.contentfragments" />
 
+	<include package=".contenttypes" />
+	
 	<include package=".users" />
 	<include package="." file="configure_stream.zcml" />
 	<include package=".utils" file="configure_bootstrap.zcml" />
@@ -190,42 +192,21 @@
 	<adapter factory=".meeting_storage.CreatorBasedAnnotationMessageInfoStorage" />
 
 	<!-- Externalization -->
-	<!--
-		<adapter factory=".links.NoOpLinkExternalObjectAdapter"
-				 name="wsgi" />
-	-->
-
 	<subscriber factory=".datastructures.LinkDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
+				
 	<subscriber factory=".authorization_acl.ACLDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
+				
 	<subscriber factory=".liking.LikeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
+				
 	<subscriber factory=".rating.RatingDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
+				
 	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
 
-	<!--
-	It breaks fewer test cases to let these pass right on through with
-	the LinkNonExternalizableReplacer...they like to get the .target
-	and .rel attributes. So we count on fixing things up with the
-	LinkExternalObjectDecorator registered next
-	<adapter factory=".links_external.LinkExternal" />
-	-->
-	<subscriber factory=".links_external.LinkExternalObjectDecorator"
-				provides="nti.externalization.interfaces.IExternalObjectDecorator" />
-
-	<!--
-	However, we do register it for second-pass, on the fly,
-	rendering
-	-->
-	<adapter factory=".links_external.LinkExternal"
-			 name="second-pass" />
-
-	<!--
-	Groups and principals
-	-->
-
+	<!-- Groups and principals -->
 	<!--
 	First, the primary group membership for users.
 	All other memberships (persistent or rule-based) will
