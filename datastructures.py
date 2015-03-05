@@ -38,13 +38,14 @@ from nti.externalization.oids import to_external_ntiid_oid
 from nti.externalization.singleton import SingletonDecorator
 from nti.externalization.externalization import toExternalObject
 
+from nti.links import links
+
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
 from . import containers as container
 from . import interfaces as nti_interfaces
 
-from . import links
 from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
 
 def _syntheticKeys( ):
