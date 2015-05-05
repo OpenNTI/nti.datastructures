@@ -13,5 +13,4 @@ from nti.traversal import monkey as traversing_patch_on_import
 traversing_patch_on_import.patch()
 del traversing_patch_on_import
 
-
 __import__('pkg_resources').declare_namespace(__name__)
