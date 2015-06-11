@@ -635,7 +635,7 @@ import zope.deferredimport
 zope.deferredimport.initialize()
 
 zope.deferredimport.deprecatedFrom(
-	"Moved to nti.dataserver.core.mixins",
+	"Moved to nti.dataserver_core.mixins",
 	"nti.dataserver_core.mixins",
 	"_ContainedMixin",
 	"ContainedMixin",
