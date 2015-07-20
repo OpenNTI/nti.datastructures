@@ -5,7 +5,8 @@ Datatypes and datatype handling.
 
 .. $Id$
 """
-from __future__ import print_function, unicode_literals, absolute_import
+
+from __future__ import print_function, unicode_literals, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -14,29 +15,33 @@ import logging
 import weakref
 import collections
 
-import BTrees.OOBTree
-
-from persistent.wref import WeakRef
-
-from zope import interface
 from zope import component
+from zope import interface
 
 from zope.container.constraints import checkObject
 from zope.container.interfaces import InvalidItemType
 
 from zope.location import locate as loc_locate
-from zope.location import interfaces as loc_interfaces
+from zope.location.interfaces import ILocation
+from zope.location.interfaces import ISublocations
 
 from ZODB.interfaces import IBroken
 from ZODB.POSException import POSError
 
+import BTrees.OOBTree
+
+from persistent.wref import WeakRef
+
 from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
 from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
 
-import nti.externalization.interfaces as ext_interfaces
 from nti.externalization.oids import to_external_ntiid_oid
 from nti.externalization.singleton import SingletonDecorator
 from nti.externalization.externalization import toExternalObject
+from nti.externalization.interfaces import StandardExternalFields
+from nti.externalization.interfaces import StandardInternalFields
+from nti.externalization.interfaces import IExternalMappingDecorator
+from nti.externalization.interfaces import INonExternalizableReplacer
 
 from nti.links import links
 
@@ -44,9 +49,14 @@ from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
 from . import containers as container
-from . import interfaces as nti_interfaces
 
-from .interfaces import (IHomogeneousTypeContainer, IHTC_NEW_FACTORY, ILink)
+from .interfaces import ILink
+from .interfaces import IContained
+from .interfaces import IZContained
+from .interfaces import ILastModified
+from .interfaces import INamedContainer
+from .interfaces import IHTC_NEW_FACTORY
+from .interfaces import IHomogeneousTypeContainer
 
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
@@ -63,8 +73,6 @@ CreatedAndModifiedTimeMixin = CreatedAndModifiedTimeMixin # pylint
 
 _magic_keys = set( _syntheticKeys() )
 
-from nti.externalization.interfaces import StandardInternalFields, StandardExternalFields
-
 def find_links( self ):
 	"""
 	Return a sequence of things that should be thought of as related links to
@@ -79,8 +87,8 @@ def find_links( self ):
 	_links.extend( getattr( self, 'links', () ) )
 	return _links
 
-@interface.implementer(ext_interfaces.IExternalMappingDecorator)
 @component.adapter(object)
+@interface.implementer(IExternalMappingDecorator)
 class LinkDecorator(object):
 
 	__metaclass__ = SingletonDecorator
@@ -95,7 +103,7 @@ class LinkDecorator(object):
 		if _links:
 			_links = sorted(_links)
 			for link in _links:
-				interface.alsoProvides( link, loc_interfaces.ILocation )
+				interface.alsoProvides( link, ILocation )
 				link.__name__ = ''
 				link.__parent__ = context
 
@@ -103,8 +111,8 @@ class LinkDecorator(object):
 		if _links:
 			result[StandardExternalFields.LINKS] = _links
 
-@interface.implementer(ext_interfaces.INonExternalizableReplacer)
 @component.adapter(ILink)
+@interface.implementer(INonExternalizableReplacer)
 class LinkNonExternalizableReplacer(object):
 	"We expect higher levels to handle links, so we let them through."
 	# TODO: This probably belongs /at/ that higher level, not here
@@ -122,7 +130,10 @@ mapping_register( BTrees.OOBTree.OOBTree )
 # Consider zc.dict if necessary
 
 class LastModifiedCopyingUserList(ModDateTrackingObject,list):
-	""" For building up a sequence of lists, keeps the max last modified. """
+	""" 
+	For building up a sequence of lists, keeps the max last modified. 
+	"""
+
 	def extend( self, other ):
 		super(LastModifiedCopyingUserList,self).extend( other )
 		self.updateLastModIfGreater( getattr( other, 'lastModified', self.lastModified ) )
@@ -134,7 +145,6 @@ class LastModifiedCopyingUserList(ModDateTrackingObject,list):
 
 	def __reduce__( self ):
 		raise TypeError("Transient object.")
-
 
 def _noop(*args): pass
 
@@ -152,10 +162,11 @@ class _ContainedObjectValueError(ValueError):
 		super(_ContainedObjectValueError,self).__init__( "%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs) )
 
 def check_contained_object_for_storage( contained ):
-	if not nti_interfaces.IContained.providedBy( contained ):
-		raise _ContainedObjectValueError( "Contained object is not " + str(nti_interfaces.IContained), contained )
-	if not nti_interfaces.IZContained.providedBy( contained ):
-		raise _ContainedObjectValueError( "Contained object is not " + str(nti_interfaces.IZContained), contained )
+	if not IContained.providedBy( contained ):
+		raise _ContainedObjectValueError( "Contained object is not " + str(IContained), contained )
+
+	if not IZContained.providedBy( contained ):
+		raise _ContainedObjectValueError( "Contained object is not " + str(IZContained), contained )
 
 	if not getattr( contained, 'containerId' ):
 		raise _ContainedObjectValueError( "Contained object has empty containerId", contained )
@@ -175,7 +186,7 @@ class _VolatileFunctionProperty(PropertyHoldingPersistent):
 	def __set__(self, instance, value):
 		setattr(instance, self.volatile_name, value)
 
-@interface.implementer(nti_interfaces.IZContained, loc_interfaces.ISublocations)
+@interface.implementer(IZContained, ISublocations)
 class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	"""
 	A specialized data structure for tracking contained objects.
@@ -191,12 +202,13 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	# is last modified), updating lastModified to now.
 	####
 
-	__parent__ = None
 	__name__ = None
+	__parent__ = None
 
 	# TODO: Remove the containerType argument; nothing except tests uses it now, everything else uses the standard type.
 	# That will let us remove the complicated code to do different things based on the type of container.
-	def __init__( self, weak=False, create=False, containers=None, containerType=container.CheckingLastModifiedBTreeContainer,
+	def __init__( self, weak=False, create=False, containers=None, 
+				  containerType=container.CheckingLastModifiedBTreeContainer,
 				  set_ids=True, containersType=BTrees.OOBTree.OOBTree):
 		"""
 		Creates a new container.
@@ -217,6 +229,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			Otherwise, the must already have an id. Set this to False if the added objects
 			are shared (and especially shared in the database.)
 		"""
+
 		super(ContainedStorage,self).__init__()
 		self.containers = containersType() # read-only, but mutates.
 		self.weak = weak # read-only
@@ -285,7 +298,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			c.pop( ix )
 			return d
 
-
 		self._v_putInContainer = _put_in_container
 		self._v_getInContainer = _get_in_container
 		self._v_removeFromContainer = _remove_in_container
@@ -320,10 +332,12 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		"""
 		if containerId in self.containers:
 			raise ValueError( '%s already exists' %(containerId) )
+
 		if container is None or containerId is None:
 			raise TypeError( 'Container/Id cannot be None' )
+
 		self.containers[containerId] = container
-		if locate and loc_interfaces.ILocation.providedBy( container ):
+		if locate and ILocation.providedBy( container ):
 			loc_locate( container, self, containerId )
 
 	def deleteContainer( self, containerId ):
@@ -399,7 +413,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 						__traceback_info__ = contained, existing
 						raise KeyError( "Contained object uses existing ID " + str(contained.id) )
 
-		## Save
+		# Save
 		if not contained.id and not self.set_ids:
 			raise _ContainedObjectValueError( "Contained object has no id and we are not allowed to give it one.", contained )
 
@@ -429,10 +443,10 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		if contained.id is None:
 			raise _ContainedObjectValueError( "Unable to determine contained id", contained )
 
-		self._v_putInContainer( container,
-								contained.id,
-								self._v_wrap( contained ),
-								contained )
+		self._v_putInContainer(container,
+							   contained.id,
+							   self._v_wrap( contained ),
+							   contained )
 		# Synchronize the timestamps
 		self._updateContainerLM( container )
 
@@ -460,7 +474,6 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		# objects by containedId (if our containers are not maps but lists,
 		# and we are just holding shared objects we do not own)
 		return self.deleteEqualContainedObject( self.getContainedObject( containerId, containedId ) )
-
 
 	def deleteEqualContainedObject( self, contained, log_level=logging.DEBUG ):
 		"""
@@ -578,7 +591,9 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	values = itervalues
 
 	def iter_all_contained_objects(self):
-		""" Only works for dict-like containers """
+		""" 
+		Only works for dict-like containers 
+		"""
 		for container in self.itervalues():
 			for v in container.values():
 				yield v
@@ -587,14 +602,14 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 		return (container for container
 				in self.itervalues()
 				# Recall that we could be holding containers given to __init__ that we are not the parent of
-				if loc_interfaces.ILocation.providedBy(container) and container.__parent__ is self)
+				if ILocation.providedBy(container) and container.__parent__ is self)
 
 	def __repr__( self ):
 		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
 
-@interface.implementer( nti_interfaces.IHomogeneousTypeContainer,
-						nti_interfaces.INamedContainer,
-						nti_interfaces.ILastModified )
+@interface.implementer( IHomogeneousTypeContainer,
+						INamedContainer,
+						ILastModified )
 class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContainer):
 	"""
 	A container that implements the basics of a :class:`INamedContainer` as
@@ -609,7 +624,6 @@ class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContain
 	one day be deprecated.) This object will check the constraints declared
 	in the interfaces for the container and the objects.
 	"""
-
 
 	contained_type = None
 	container_name = None
@@ -686,3 +700,8 @@ zope.deferredimport.deprecatedFrom(
 	"nti.externalization.persistence",
 	"PersistentExternalizableDictionary",
 	"PersistentExternalizableList")
+
+zope.deferredimport.deprecatedFrom(
+    "Moved to nti.zodb.minmax",
+    "nti.zodb.minmax",
+    "_SafeMaximum")
