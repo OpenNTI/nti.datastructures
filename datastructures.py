@@ -48,7 +48,9 @@ from nti.links import links
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
-from . import containers as container
+from .containers import LastModifiedBTreeContainer
+from .containers import CheckingLastModifiedBTreeContainer
+from .containers import CaseInsensitiveLastModifiedBTreeContainer
 
 from .interfaces import ILink
 from .interfaces import IContained
@@ -208,7 +210,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	# TODO: Remove the containerType argument; nothing except tests uses it now, everything else uses the standard type.
 	# That will let us remove the complicated code to do different things based on the type of container.
 	def __init__( self, weak=False, create=False, containers=None, 
-				  containerType=container.CheckingLastModifiedBTreeContainer,
+				  containerType=CheckingLastModifiedBTreeContainer,
 				  set_ids=True, containersType=BTrees.OOBTree.OOBTree):
 		"""
 		Creates a new container.
@@ -218,13 +220,14 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			of objects added to us will be set. If `create` is a boolean, this `creator` property
 			will be set to this object (useful for subclassing). Otherwise, the `creator` property
 			will be set to the value of `create`.
-		:param dict containers: Initial containers. We do not adopt these containers, they may already have a __parent__
-			(presumably an ancestor of ours as well)
+		:param dict containers: Initial containers. We do not adopt these containers, 
+			they may already have a __parent__ (presumably an ancestor of ours as well)
 		:param type containerType: The type for each created container. Should be a mapping
 			type, and should handle conflicts. The default value only allows comparable keys.
 			The type can also be a `list` type, though this use is deprecated and discouraged.
 		:param type containersType: The mapping type factory that will hold the containers.
-			Default is :class:`ModDateTrackingOOBTree`, another choice is :class:`CaseInsensitiveModDateTrackingOOBTree`.
+			Default is :class:`ModDateTrackingOOBTree`, another choice is 
+			:class:`CaseInsensitiveModDateTrackingOOBTree`.
 		:param bool set_ids: If true (default) the ``id`` field of newly added objects will be set.
 			Otherwise, the must already have an id. Set this to False if the added objects
 			are shared (and especially shared in the database.)
@@ -415,7 +418,8 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 
 		# Save
 		if not contained.id and not self.set_ids:
-			raise _ContainedObjectValueError( "Contained object has no id and we are not allowed to give it one.", contained )
+			raise _ContainedObjectValueError( 
+					"Contained object has no id and we are not allowed to give it one.", contained )
 
 		# Add to the connection so it can start creating an OID
 		# if we are saved, and it is Persistent but unsaved
@@ -610,7 +614,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 @interface.implementer( IHomogeneousTypeContainer,
 						INamedContainer,
 						ILastModified )
-class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContainer):
+class AbstractNamedLastModifiedBTreeContainer(LastModifiedBTreeContainer):
 	"""
 	A container that implements the basics of a :class:`INamedContainer` as
 	a mapping.
@@ -641,10 +645,19 @@ class AbstractNamedLastModifiedBTreeContainer(container.LastModifiedBTreeContain
 			raise InvalidItemType( self, item, (self.contained_type,) )
 		super(AbstractNamedLastModifiedBTreeContainer,self).__setitem__(key, item)
 
-class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(container.CaseInsensitiveLastModifiedBTreeContainer,
+class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(CaseInsensitiveLastModifiedBTreeContainer,
 															 AbstractNamedLastModifiedBTreeContainer):
 	pass
 
+
+# deprecations
+
+from zope.deprecation import deprecated
+
+deprecated('ModDateTrackingOOBTree', 'No longer used')
+class ModDateTrackingOOBTree(PersistentPropertyHolder, BTrees.OOBTree.OOBTree):
+	pass
+	
 import zope.deferredimport
 zope.deferredimport.initialize()
 
