@@ -107,6 +107,7 @@
 			name="rating"
 			storage="contentratings.storage.UserRatingStorage" />
 	</configure>
+
 	<subscriber handler=".liking.update_last_mod_on_rated" />
 	<subscriber handler=".rating.update_last_mod_on_rated" />
 
@@ -127,6 +128,7 @@
 	<include package="nti.links" />
 	<include package="nti.mimetype" />
 	<include package="nti.chatserver" />
+	<include package="nti.invitations" />
 	<include package="nti.contentrange" />
 	<include package="nti.contentlibrary" />
 	<include package="nti.contentfragments" />
@@ -263,7 +265,6 @@
 		factory=".authorization._UserGroupAwarePrincipalExternalObject"
 		provides="nti.externalization.interfaces.IExternalObject"
 		for=".authorization._UserGroupAwarePrincipal" />
-
 
 	<!-- Communities can be groups -->
 	<adapter factory=".authorization._CommunityGroup"
