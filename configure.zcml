@@ -20,7 +20,7 @@
 	<include package="zope.traversing" />
 	<include package="zope.dublincore" />
 	<include package="zope.annotation" />
-	
+
 	<!--
 	Note that this gives us a default IAuthentication object in
 	the global registry. (We need a persistent implementation)
@@ -134,7 +134,7 @@
 	<include package="nti.contentfragments" />
 
 	<include package=".contenttypes" />
-	
+
 	<include package=".users" />
 	<include package="." file="configure_stream.zcml" />
 	<include package=".utils" file="configure_bootstrap.zcml" />
@@ -196,16 +196,16 @@
 	<!-- Externalization -->
 	<subscriber factory=".datastructures.LinkDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
-				
+
 	<subscriber factory=".authorization_acl.ACLDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator" />
-				
+
 	<subscriber factory=".liking.LikeDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
-				
+
 	<subscriber factory=".rating.RatingDecorator"
 				provides="nti.externalization.interfaces.IExternalMappingDecorator"/>
-				
+
 	<adapter factory=".datastructures.LinkNonExternalizableReplacer" />
 
 	<!-- Groups and principals -->
