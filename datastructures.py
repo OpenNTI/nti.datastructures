@@ -565,7 +565,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 				try:
 					value = self._v_wrap(value)
 					if value is not None:
-						if IBroken.providedBy(value): 
+						if IBroken.providedBy(value):
 							result +=1
 							del container[name]
 							logger.warn("Removing broken object %s,%s", name, type(value))
@@ -576,7 +576,7 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 					del container[name]
 					logger.warn("Removing broken object %s,%s", name, type(value))
 		return result
-			
+
 	def __iter__(self):
 		return iter(self.containers)
 
