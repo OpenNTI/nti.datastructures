@@ -51,7 +51,6 @@
 	<!-- Simple dependency management -->
 	<include package="zope.app.dependable" />
 
-
 	<include package="nti.site" />
 
 	<!-- Entries in the Zope root principal registry -->
@@ -128,6 +127,7 @@
 	<include package="nti.links" />
 	<include package="nti.mimetype" />
 	<include package="nti.chatserver" />
+	<include package="nti.containers" />
 	<include package="nti.invitations" />
 	<include package="nti.contentrange" />
 	<include package="nti.contentlibrary" />
@@ -148,8 +148,7 @@
 
 	<!-- Database shards -->
 	<adapter factory=".shards.ShardLayout" />
-	<utility factory=".shards.HashedShardPlacer"
-			 name="default" />
+	<utility factory=".shards.HashedShardPlacer" name="default" />
 
 	<!-- Events -->
 	<subscriber handler=".sessions._send_notification" />
@@ -161,17 +160,7 @@
 	<subscriber handler=".session_storage._remove_sessions_for_removed_user" />
 	<subscriber handler=".sharing.SharingSourceMixin_dynamicsharingtargetdeleted" />
 
-	<!-- Container events -->
-	<subscriber handler=".containers.update_container_modified_time" />
-
-	<!-- TODO: We are relying on registration order. Make sure that's kosher. -->
-	<subscriber handler=".containers.update_object_modified_time" />
-	<subscriber handler=".containers.update_parent_modified_time" />
-
 	<subscriber handler=".containers.contain_nested_objects" />
-
-	<!-- Container adapters -->
-	<adapter factory=".containers.IdGeneratorNameChooser" />
 
 	<!-- Chat -->
 	<adapter factory=".meeting_container_storage._FriendsListAdapter" />
