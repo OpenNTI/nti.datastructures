@@ -128,6 +128,7 @@
 	<include package="nti.mimetype" />
 	<include package="nti.chatserver" />
 	<include package="nti.containers" />
+	<include package="nti.contentfile" />
 	<include package="nti.invitations" />
 	<include package="nti.contentrange" />
 	<include package="nti.contentfolder" />
