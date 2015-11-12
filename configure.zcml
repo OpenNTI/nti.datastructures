@@ -130,6 +130,7 @@
 	<include package="nti.containers" />
 	<include package="nti.invitations" />
 	<include package="nti.contentrange" />
+	<include package="nti.contentfolder" />
 	<include package="nti.contentlibrary" />
 	<include package="nti.contentfragments" />
 
@@ -222,19 +223,18 @@
 	<adapter factory=".authorization._UserGroupAwarePrincipal"
 			 provides=".interfaces.IPrincipal"
 			 for=".interfaces.IUser" />
+
 	<adapter factory=".authorization._UserGroupAwarePrincipal"
 			 provides=".interfaces.IGroupAwarePrincipal"
 			 for=".interfaces.IUser" />
+
 	<!-- We can also have a participation for the user -->
 	<adapter factory=".authorization._participation_for_user" />
 
-	<!--
-		 And we can get back from that to something that is
-		 annotatable -->
-	<adapter
-		factory=".authorization._UserGroupAwarePrincipalAnnotations"
-		provides="zope.annotation.interfaces.IAnnotations"
-		for=".authorization._UserGroupAwarePrincipal" />
+	<!-- And we can get back from that to something that is annotatable -->
+	<adapter factory=".authorization._UserGroupAwarePrincipalAnnotations"
+			 provides="zope.annotation.interfaces.IAnnotations"
+			 for=".authorization._UserGroupAwarePrincipal" />
 
 	<!--
 	...and when we need annotations in any more explicit
@@ -245,15 +245,14 @@
 	because it wants to live as its own persistent component in the
 	site manager in the database.
 	-->
-	<adapter
-		factory=".authorization._UserGroupAwarePrincipalAnnotations"
-		provides="zope.annotation.interfaces.IAnnotations"
-		for=".authorization._UserGroupAwarePrincipal *" />
+	<adapter factory=".authorization._UserGroupAwarePrincipalAnnotations"
+			 provides="zope.annotation.interfaces.IAnnotations"
+			 for=".authorization._UserGroupAwarePrincipal *" />
+
 	<!-- It externalizes as the underlying user -->
-	<adapter
-		factory=".authorization._UserGroupAwarePrincipalExternalObject"
-		provides="nti.externalization.interfaces.IExternalObject"
-		for=".authorization._UserGroupAwarePrincipal" />
+	<adapter factory=".authorization._UserGroupAwarePrincipalExternalObject"
+			 provides="nti.externalization.interfaces.IExternalObject"
+			 for=".authorization._UserGroupAwarePrincipal" />
 
 	<!-- Communities can be groups -->
 	<adapter factory=".authorization._CommunityGroup"
