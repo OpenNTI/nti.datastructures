@@ -48,9 +48,9 @@ from nti.links import links
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
-from .containers import LastModifiedBTreeContainer
-from .containers import CheckingLastModifiedBTreeContainer
-from .containers import CaseInsensitiveLastModifiedBTreeContainer
+from nti.containers.containers import LastModifiedBTreeContainer
+from nti.containers.containers import CheckingLastModifiedBTreeContainer
+from nti.containers.containers import CaseInsensitiveLastModifiedBTreeContainer
 
 from .interfaces import ILink
 from .interfaces import IContained
