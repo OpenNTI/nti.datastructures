@@ -52,13 +52,13 @@ from nti.containers.containers import LastModifiedBTreeContainer
 from nti.containers.containers import CheckingLastModifiedBTreeContainer
 from nti.containers.containers import CaseInsensitiveLastModifiedBTreeContainer
 
-from .interfaces import ILink
-from .interfaces import IContained
-from .interfaces import IZContained
-from .interfaces import ILastModified
-from .interfaces import INamedContainer
-from .interfaces import IHTC_NEW_FACTORY
-from .interfaces import IHomogeneousTypeContainer
+from nti.dataserver.interfaces import ILink
+from nti.dataserver.interfaces import IContained
+from nti.dataserver.interfaces import IZContained
+from nti.dataserver.interfaces import ILastModified
+from nti.dataserver.interfaces import INamedContainer
+from nti.dataserver.interfaces import IHTC_NEW_FACTORY
+from nti.dataserver.interfaces import IHomogeneousTypeContainer
 
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
@@ -207,8 +207,10 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 	__name__ = None
 	__parent__ = None
 
-	# TODO: Remove the containerType argument; nothing except tests uses it now, everything else uses the standard type.
-	# That will let us remove the complicated code to do different things based on the type of container.
+	# TODO: Remove the containerType argument; nothing except tests uses it now, 
+	# everything else uses the standard type.
+	# That will let us remove the complicated code to do different things based on
+	# the type of container.
 	def __init__( self, weak=False, create=False, containers=None, 
 				  containerType=CheckingLastModifiedBTreeContainer,
 				  set_ids=True, containersType=BTrees.OOBTree.OOBTree):
@@ -436,7 +438,8 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 			the_id = None
 			if getattr( contained, 'to_container_key', None ):
 				the_id = contained.to_container_key()
-				if isinstance( container, collections.Mapping ) and container.get( the_id, contained ) is not contained:
+				if 		isinstance( container, collections.Mapping ) \
+					and container.get( the_id, contained ) is not contained:
 					# Don't allow overrwriting
 					the_id = None
 			if the_id is None:
@@ -527,7 +530,8 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 				if strong is not None and strong != contained:
 					container.append( strong )
 				else:
-					logger.log( log_level, "Dropping obj by equality/missing during delete %s == %s", strong, contained )
+					logger.log(log_level, "Dropping obj by equality/missing during delete %s == %s",
+							   strong, contained )
 			return None
 		else:
 			self._updateContainerLM( container )
@@ -609,7 +613,9 @@ class ContainedStorage(PersistentPropertyHolder,ModDateTrackingObject):
 				if ILocation.providedBy(container) and container.__parent__ is self)
 
 	def __repr__( self ):
-		return "<%s size: %s name: %s>" % (self.__class__.__name__, len(self.containers), self.__name__)
+		return "<%s size: %s name: %s>" % (self.__class__.__name__, 
+										   len(self.containers), 
+										   self.__name__)
 
 @interface.implementer( IHomogeneousTypeContainer,
 						INamedContainer,
