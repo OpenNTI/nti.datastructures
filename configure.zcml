@@ -232,6 +232,10 @@
 	<!-- We can also have a participation for the user -->
 	<adapter factory=".authorization._participation_for_user" />
 
+	<!-- We can also have a participation for the zope IPrincipal
+		such as the system UnauthenticatedUser -->
+	<adapter factory=".authorization._participation_for_zope_principal" />
+
 	<!-- And we can get back from that to something that is annotatable -->
 	<adapter factory=".authorization._UserGroupAwarePrincipalAnnotations"
 			 provides="zope.annotation.interfaces.IAnnotations"
