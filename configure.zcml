@@ -282,6 +282,7 @@
 	<adapter factory=".authorization._string_role_factory"
 			 provides=".interfaces.IRole"
 			 for="basestring"/>
+
 	<!-- System users are adapted specially -->
 	<adapter factory=".authorization._system_user_factory"
 			 provides=".interfaces.IPrincipal"
@@ -308,6 +309,11 @@
 	<subscriber factory=".notables.CircledNotableFilter"
 				provides=".interfaces.INotableFilter"
 				for="*" />
+
+	<!-- Invitations -->
+	<adapter factory=".invitations.JoinEntityInvitationActor"
+			 provides=".interfaces.IJoinEntityInvitationActor"
+			 for=".interfaces.IJoinEntityInvitation" />
 
 	<!-- ACL/ACE permissions -->
 	<include package="." file="configure_acls.zcml" />
