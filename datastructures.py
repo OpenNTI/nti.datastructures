@@ -32,22 +32,6 @@ import BTrees.OOBTree
 
 from persistent.wref import WeakRef
 
-from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
-from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
-
-from nti.externalization.oids import to_external_ntiid_oid
-from nti.externalization.singleton import SingletonDecorator
-from nti.externalization.externalization import toExternalObject
-from nti.externalization.interfaces import StandardExternalFields
-from nti.externalization.interfaces import StandardInternalFields
-from nti.externalization.interfaces import IExternalMappingDecorator
-from nti.externalization.interfaces import INonExternalizableReplacer
-
-from nti.links import links
-
-from nti.zodb.persistentproperty import PersistentPropertyHolder
-from nti.zodb.persistentproperty import PropertyHoldingPersistent
-
 from nti.containers.containers import LastModifiedBTreeContainer
 from nti.containers.containers import CheckingLastModifiedBTreeContainer
 from nti.containers.containers import CaseInsensitiveLastModifiedBTreeContainer
@@ -59,6 +43,25 @@ from nti.dataserver.interfaces import ILastModified
 from nti.dataserver.interfaces import INamedContainer
 from nti.dataserver.interfaces import IHTC_NEW_FACTORY
 from nti.dataserver.interfaces import IHomogeneousTypeContainer
+
+from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
+from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject # BWC export
+
+from nti.externalization.externalization import toExternalObject
+
+from nti.externalization.interfaces import StandardExternalFields
+from nti.externalization.interfaces import StandardInternalFields
+from nti.externalization.interfaces import IExternalMappingDecorator
+from nti.externalization.interfaces import INonExternalizableReplacer
+
+from nti.externalization.oids import to_external_ntiid_oid
+
+from nti.externalization.singleton import SingletonDecorator
+
+from nti.links import links
+
+from nti.zodb.persistentproperty import PersistentPropertyHolder
+from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
 def _syntheticKeys( ):
 	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
