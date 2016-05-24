@@ -11,5 +11,5 @@ from nti.traversal import monkey as traversing_patch_on_import
 traversing_patch_on_import.patch()
 del traversing_patch_on_import
 
-import zope.i18nmessageid
-MessageFactory = zope.i18nmessageid.MessageFactory('nti.dataserver')
+from zope.i18nmessageid import MessageFactory
+MessageFactory = MessageFactory('nti.dataserver')
