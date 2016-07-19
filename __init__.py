@@ -4,12 +4,7 @@
 .. $Id$
 """
 
-# Note that we're not exporting anything by importing it.
-# This helps reduce the chances of import cycles
+from __future__ import print_function, unicode_literals, absolute_import, division
+__docformat__ = "restructuredtext en"
 
-from nti.traversal import monkey as traversing_patch_on_import
-traversing_patch_on_import.patch()
-del traversing_patch_on_import
-
-from zope.i18nmessageid import MessageFactory
-MessageFactory = MessageFactory('nti.dataserver')
+logger = __import__('logging').getLogger(__name__)
