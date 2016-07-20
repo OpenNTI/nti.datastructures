@@ -49,6 +49,7 @@ from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
 from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject  # BWC export
 
 from nti.externalization.interfaces import StandardInternalFields
+from nti.externalization.interfaces import StandardExternalFields
 
 from nti.externalization.oids import to_external_ntiid_oid
 
@@ -56,7 +57,12 @@ from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
 def _syntheticKeys():
-	return ('OID', 'ID', 'Last Modified', 'Creator', 'ContainerId', 'Class')
+	return (StandardExternalFields.OID, 
+			StandardExternalFields.ID,
+			StandardExternalFields.CLASS,
+			StandardExternalFields.CREATOR,
+			StandardExternalFields.CONTAINER_ID,
+			StandardExternalFields.LAST_MODIFIED)
 
 def _isMagicKey(key):
 	""" 
