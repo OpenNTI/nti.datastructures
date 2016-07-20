@@ -57,8 +57,8 @@ from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
 
 def _syntheticKeys():
-	return (StandardExternalFields.OID, 
-			StandardExternalFields.ID,
+	return (StandardExternalFields.ID,
+			StandardExternalFields.OID,
 			StandardExternalFields.CLASS,
 			StandardExternalFields.CREATOR,
 			StandardExternalFields.CONTAINER_ID,
