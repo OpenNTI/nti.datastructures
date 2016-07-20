@@ -45,8 +45,7 @@ from nti.dataserver_core.interfaces import INamedContainer
 from nti.dataserver_core.interfaces import IHTC_NEW_FACTORY
 from nti.dataserver_core.interfaces import IHomogeneousTypeContainer
 
-from nti.dublincore.time_mixins import CreatedAndModifiedTimeMixin
-from nti.dublincore.time_mixins import ModifiedTimeMixin as ModDateTrackingObject  # BWC export
+from nti.dublincore.time_mixins import ModDateTrackingObject
 
 from nti.externalization.interfaces import StandardInternalFields
 from nti.externalization.interfaces import StandardExternalFields
@@ -70,9 +69,7 @@ def _isMagicKey(key):
 	those keys that are special and not settable by the user.
 	"""
 	return key in _syntheticKeys()
-
 isSyntheticKey = _isMagicKey
-CreatedAndModifiedTimeMixin = CreatedAndModifiedTimeMixin  # pylint
 
 # For speed and use in this function, we declare an 'inline'-able attribute
 
@@ -614,3 +611,11 @@ class AbstractNamedLastModifiedBTreeContainer(LastModifiedBTreeContainer):
 class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(CaseInsensitiveLastModifiedBTreeContainer,
 															 AbstractNamedLastModifiedBTreeContainer):
 	pass
+
+import zope.deferredimport
+zope.deferredimport.initialize()
+
+zope.deferredimport.deprecatedFrom(
+	"Moved to nti.dublincore.time_mixins",
+	"nti.dublincore.time_mixins",
+	"CreatedAndModifiedTimeMixin")
