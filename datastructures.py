@@ -64,7 +64,7 @@ def _syntheticKeys():
 			StandardExternalFields.LAST_MODIFIED)
 
 def _isMagicKey(key):
-	""" 
+	"""
 	For our mixin objects that have special keys, defines
 	those keys that are special and not settable by the user.
 	"""
@@ -441,7 +441,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 			the object. If this is expected to be common and harmless, set it lower than DEBUG.
 		"""
 		if contained is None or contained.containerId is None:
-			logger.log(log_level, 
+			logger.log(log_level,
 					   "Unable to delete object equal to None or with no containerId: %s",
 					   contained)
 			return None
@@ -452,7 +452,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 				"Unable to delete object we (%r) have no container for: %s (%s) (%s) (%s %r %r %r)",
 				self,
 				contained.containerId, list(self.containers.keys()),
-				self.containers._p_state, 
+				self.containers._p_state,
 				self.containers._p_jar,
 				self.containers._p_oid,
 				self.containers._p_serial,
@@ -485,9 +485,9 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 				if strong is not None and strong != contained:
 					container.append(strong)
 				else:
-					logger.log(log_level, 
+					logger.log(log_level,
 							   "Dropping obj by equality/missing during delete %s == %s",
-							   strong, 
+							   strong,
 							   contained)
 			return None
 		else:
