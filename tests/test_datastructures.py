@@ -22,7 +22,7 @@ from nose.tools import assert_raises
 
 import unittest
 
-from nti.dataserver_core.mixins import ZContainedMixin
+from nti.coremetadata.mixins import ZContainedMixin
 
 from nti.datastructures.datastructures import ContainedStorage
 from nti.datastructures.datastructures import LastModifiedCopyingUserList
