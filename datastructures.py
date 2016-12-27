@@ -34,14 +34,15 @@ import BTrees.OOBTree
 
 from persistent.wref import WeakRef
 
+from nti.base.interfaces import ILastModified
+
 from nti.containers.containers import LastModifiedBTreeContainer
 from nti.containers.containers import CheckingLastModifiedBTreeContainer
 from nti.containers.containers import CaseInsensitiveLastModifiedBTreeContainer
 
-from nti.coremetadata.interfaces import ILastModified
+from nti.coremetadata.interfaces import IContained
+from nti.coremetadata.interfaces import INamedContainer
 
-from nti.dataserver_core.interfaces import IContained
-from nti.dataserver_core.interfaces import INamedContainer
 from nti.dataserver_core.interfaces import IHTC_NEW_FACTORY
 from nti.dataserver_core.interfaces import IHomogeneousTypeContainer
 
