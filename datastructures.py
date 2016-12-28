@@ -40,11 +40,11 @@ from nti.containers.containers import LastModifiedBTreeContainer
 from nti.containers.containers import CheckingLastModifiedBTreeContainer
 from nti.containers.containers import CaseInsensitiveLastModifiedBTreeContainer
 
+from nti.coremetadata.interfaces import IHTC_NEW_FACTORY
+
 from nti.coremetadata.interfaces import IContained
 from nti.coremetadata.interfaces import INamedContainer
-
-from nti.dataserver_core.interfaces import IHTC_NEW_FACTORY
-from nti.dataserver_core.interfaces import IHomogeneousTypeContainer
+from nti.coremetadata.interfaces import IHomogeneousTypeContainer
 
 from nti.dublincore.time_mixins import ModDateTrackingObject
 
