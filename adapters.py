@@ -12,7 +12,7 @@ logger = __import__('logging').getLogger(__name__)
 from zope import component
 from zope import interface
 
-from nti.dataserver_core.interfaces import ILink
+from nti.dataserver.interfaces import ILink
 
 from nti.externalization.interfaces import INonExternalizableReplacer
 
