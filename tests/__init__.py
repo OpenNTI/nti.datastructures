@@ -14,11 +14,12 @@ from nti.testing.layers import ConfiguringLayerMixin
 
 import zope.testing.cleanup
 
+
 class SharedConfiguringTestLayer(ZopeComponentLayer,
                                  GCLayerMixin,
                                  ConfiguringLayerMixin):
 
-    set_up_packages = ('nti.datastructures', 'nti.externalization')
+    set_up_packages = ('nti.datastructures', 'nti.externalization', 'nti.links')
 
     @classmethod
     def setUp(cls):
