@@ -118,8 +118,7 @@ class _ContainedObjectValueError(ValueError):
             cstr = repr(contained)
         except Exception as e:
             cstr = '{%s}' % e
-        super(_ContainedObjectValueError, self).__init__(
-            "%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs))
+        super(_ContainedObjectValueError, self).__init__("%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs))
 
 
 def check_contained_object_for_storage(contained):
@@ -336,9 +335,11 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         del self.containers[containerId]
 
     def getContainer(self, containerId, defaultValue=None):
-        """ Given a container ID, returns the existing container, or
+        """ 
+        Given a container ID, returns the existing container, or
         the default value if there is no container. The returned
-        value SHOULD NOT be modified. """
+        value SHOULD NOT be modified. 
+        """
         # FIXME: handle unwrapping of the contained objects
         return self.containers.get(containerId, defaultValue)
 
@@ -356,9 +357,11 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         return container
 
     def maybeCreateContainedObjectWithType(self, datatype, externalValue):
-        """ If we recognize and own the given datatype, creates
+        """ 
+        If we recognize and own the given datatype, creates
         a new default instance and returns it. Otherwise returns
-        None. """
+        None. 
+        """
         result = None
         container = self.containers.get(datatype)
         if IHomogeneousTypeContainer.providedBy(container):
@@ -407,7 +410,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 
         # Add to the connection so it can start creating an OID
         # if we are saved, and it is Persistent but unsaved
-        if         getattr(self, '_p_jar', None) \
+        if      getattr(self, '_p_jar', None) \
             and getattr(contained, '_p_jar', self) is None:
             getattr(self, '_p_jar').add(contained)
 
@@ -643,8 +646,7 @@ class AbstractNamedLastModifiedBTreeContainer(LastModifiedBTreeContainer):
     container_name = None
 
     def __init__(self, *args, **kwargs):
-        super(AbstractNamedLastModifiedBTreeContainer, self).__init__(
-            *args, **kwargs)
+        super(AbstractNamedLastModifiedBTreeContainer, self).__init__(*args, **kwargs)
 
     def __setitem__(self, key, item):
         # TODO: Finish porting this all over to the constraints in zope.container.
