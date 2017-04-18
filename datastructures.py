@@ -412,7 +412,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         # Add to the connection so it can start creating an OID
         # if we are saved, and it is Persistent but unsaved
         if      IConnection(self, None) is not None \
-            and IConnection(contained, None) is None:
+            and IConnection(contained, None) is None \
+            and hasattr(contained, '_p_jar'):
             IConnection(self).add(contained)
 
         self._v_create(contained)
