@@ -27,6 +27,7 @@ from zope.location.interfaces import ISublocations
 from zope.location.interfaces import IContained as IZContained
 
 from ZODB.interfaces import IBroken
+from ZODB.interfaces import IConnection
 
 from ZODB.POSException import POSError
 
@@ -351,8 +352,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         container = self.containers.get(containerId, None)
         if container is None:
             container = self.containerType()
-            if getattr(self, '_p_jar', None) and hasattr(container, '_p_jar'):
-                getattr(self, '_p_jar').add(container)
+            if IConnection(self, None) is not None and hasattr(container, '_p_jar'):
+                IConnection(self).add(container)
             self.addContainer(containerId, container)
         return container
 
@@ -410,9 +411,9 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 
         # Add to the connection so it can start creating an OID
         # if we are saved, and it is Persistent but unsaved
-        if      getattr(self, '_p_jar', None) \
-            and getattr(contained, '_p_jar', self) is None:
-            getattr(self, '_p_jar').add(contained)
+        if      IConnection(self, None) is not None \
+            and IConnection(contained, None) is None:
+            IConnection(self).add(contained)
 
         self._v_create(contained)
         if not contained.id:
