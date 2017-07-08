@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 # disable: accessing protected members, too many methods
@@ -64,6 +64,7 @@ class TestLastModifiedCopyingUserList(unittest.TestCase):
         assert_that(l.lastModified, is_(0))
         assert_that(l, is_([1, 2, 3]))
 
+
 import persistent
 
 from nti.externalization.persistence import PersistentExternalizableList
@@ -107,7 +108,7 @@ class TestContainedStorage(unittest.TestCase):
     def test_idempotent_add_even_when_wrapped(self):
         cs = ContainedStorage(weak=True)
         obj = self.C()
-        obj.containerId = 'foo'
+        obj.containerId = u'foo'
         cs.addContainedObject(obj)
 
         # And again with no problems
@@ -116,7 +117,7 @@ class TestContainedStorage(unittest.TestCase):
         # But a new one breaks
         old_id = obj.id
         obj = self.C()
-        obj.containerId = 'foo'
+        obj.containerId = u'foo'
         obj.id = old_id
         with assert_raises(KeyError):
             cs.addContainedObject(obj)
@@ -125,14 +126,14 @@ class TestContainedStorage(unittest.TestCase):
         # Do all the operations work with dictionaries?
         cs = ContainedStorage(containerType=dict)
         obj = self.C()
-        obj.containerId = 'foo'
+        obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.getContainer('foo'), instance_of(dict))
         assert_that(obj.id, not_none())
 
         lm = cs.lastModified
 
-        assert_that(cs.deleteContainedObject('foo', obj.id), 
+        assert_that(cs.deleteContainedObject('foo', obj.id),
                     same_instance(obj))
         assert_that(cs.lastModified, greater_than(lm))
         # container stays around
@@ -142,12 +143,12 @@ class TestContainedStorage(unittest.TestCase):
         # Should work with the default containerType,
         # plus inserted containers that don't share the same
         # inheritance tree.
-        cs = ContainedStorage(containers={'a': dict()})
+        cs = ContainedStorage(containers={u'a': dict()})
         obj = self.C()
-        obj.containerId = 'foo'
+        obj.containerId = u'foo'
         cs.addContainedObject(obj)
         obj = self.C()
-        obj.containerId = 'a'
+        obj.containerId = u'a'
         cs.addContainedObject(obj)
 
         cs.getContainedObject('foo', '0')
@@ -156,14 +157,14 @@ class TestContainedStorage(unittest.TestCase):
     def test_list_container(self):
         cs = ContainedStorage(containerType=PersistentExternalizableList)
         obj = self.C()
-        obj.containerId = 'foo'
+        obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.getContainedObject('foo', 0), is_(obj))
 
     def test_last_modified(self):
         cs = ContainedStorage()
         obj = self.C()
-        obj.containerId = 'foo'
+        obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.lastModified, is_not(0))
         assert_that(cs.lastModified, is_(cs.getContainer('foo').lastModified))
@@ -182,6 +183,7 @@ class TestContainedStorage(unittest.TestCase):
         cs.deleteContainedObject(obj.containerId, obj.id)
 
         assert_that(cs.lastModified, is_(greater_than_or_equal_to(lm_add)))
+
 
 from zope import interface, component
 

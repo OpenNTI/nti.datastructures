@@ -6,7 +6,7 @@ Datatypes and datatype handling.
 .. $Id$
 """
 
-from __future__ import print_function, unicode_literals, absolute_import, division
+from __future__ import print_function, absolute_import, division
 __docformat__ = "restructuredtext en"
 
 logger = __import__('logging').getLogger(__name__)
@@ -34,6 +34,8 @@ from ZODB.POSException import POSError
 from BTrees.OOBTree import OOBTree
 
 from persistent.wref import WeakRef
+
+from nti.base._compat import text_
 
 from nti.base.interfaces import ILastModified
 
@@ -103,7 +105,7 @@ class LastModifiedCopyingUserList(ModDateTrackingObject, list):
         raise TypeError("Transient object.")
 
 
-def _noop(*args): 
+def _noop(*args):
     pass
 
 
@@ -118,7 +120,7 @@ class _ContainedObjectValueError(ValueError):
         try:
             cstr = repr(contained)
         except Exception as e:
-            cstr = '{%s}' % e
+            cstr = u'{%s}' % e
         super(_ContainedObjectValueError, self).__init__("%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs))
 
 
@@ -222,10 +224,10 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             self._v_wrap = wrap
             self._v_unwrap = unwrap
         else:
-            def wrap(obj): 
+            def wrap(obj):
                 return obj
 
-            def unwrap(obj): 
+            def unwrap(obj):
                 return obj
 
             self._v_wrap = wrap
@@ -249,7 +251,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                 c.append(d)
                 if self.set_ids:
                     try:
-                        setattr(orig, StandardInternalFields.ID, unicode(len(c) - 1))
+                        setattr(orig, StandardInternalFields.ID,
+                                text_(str(len(c) - 1)))
                     except AttributeError:
                         logger.debug("Failed to set id", exc_info=True)
 
@@ -366,7 +369,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         result = None
         container = self.containers.get(datatype)
         if IHomogeneousTypeContainer.providedBy(container):
-            factory = container.contained_type.queryTaggedValue(IHTC_NEW_FACTORY)
+            contained_type = container.contained_type
+            factory = contained_type.queryTaggedValue(IHTC_NEW_FACTORY)
             if factory:
                 result = factory(externalValue)
         return result
@@ -435,7 +439,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 
         __traceback_info__ = container, contained.containerId, contained.id
         if contained.id is None:
-            raise _ContainedObjectValueError("Unable to determine contained id", 
+            raise _ContainedObjectValueError("Unable to determine contained id",
                                              contained)
 
         self._v_putInContainer(container,
@@ -500,13 +504,13 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         try:
             contained = self._v_unwrap(self._v_removeFromContainer(container, wrapped))
         except ValueError:
-            logger.log(log_level, 
-                       "Failed to find object to delete equal to %s", 
+            logger.log(log_level,
+                       "Failed to find object to delete equal to %s",
                        contained)
             return None
         except TypeError:
-            logger.log(log_level, 
-                       "Failed to find object to delete equal to %s", 
+            logger.log(log_level,
+                       "Failed to find object to delete equal to %s",
                        contained,
                        exc_info=True)
             # Getting here means that we are no longer able to resolve
@@ -552,8 +556,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             # get call.
             result = defaultValue
         else:
-            result = self._v_getInContainer(container, 
-                                            containedId, 
+            result = self._v_getInContainer(container,
+                                            containedId,
                                             defaultValue)
         if result is not defaultValue:
             result = self._v_unwrap(result)
@@ -575,7 +579,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                         if IBroken.providedBy(value):
                             result += 1
                             del container[name]
-                            logger.warn("Removing broken object %s,%s", 
+                            logger.warn("Removing broken object %s,%s",
                                         name,
                                         type(value))
                         elif hasattr(value, '_p_activate'):
@@ -664,6 +668,7 @@ class AbstractNamedLastModifiedBTreeContainer(LastModifiedBTreeContainer):
 class AbstractCaseInsensitiveNamedLastModifiedBTreeContainer(CaseInsensitiveLastModifiedBTreeContainer,
                                                              AbstractNamedLastModifiedBTreeContainer):
     pass
+
 
 import zope.deferredimport
 zope.deferredimport.initialize()
