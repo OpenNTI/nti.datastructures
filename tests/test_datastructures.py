@@ -31,7 +31,7 @@ from nti.dublincore.datastructures import CreatedModDateTrackingObject
 
 from nti.externalization.externalization import toExternalObject
 
-from nti.externalization.oids import to_external_ntiid_oid
+from nti.ntiids.oids import to_external_ntiid_oid
 
 from nti.datastructures.tests import SharedConfiguringTestLayer
 

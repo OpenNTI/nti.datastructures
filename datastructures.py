@@ -54,7 +54,7 @@ from nti.dublincore.time_mixins import ModDateTrackingObject
 from nti.externalization.interfaces import StandardInternalFields
 from nti.externalization.interfaces import StandardExternalFields
 
-from nti.externalization.oids import to_external_ntiid_oid
+from nti.ntiids.oids import to_external_ntiid_oid
 
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
