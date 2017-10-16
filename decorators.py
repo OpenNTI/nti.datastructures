@@ -4,10 +4,9 @@
 .. $Id$
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 from zope import component
 from zope import interface
@@ -19,9 +18,13 @@ from nti.externalization.externalization import toExternalObject
 from nti.externalization.interfaces import StandardExternalFields
 from nti.externalization.interfaces import IExternalMappingDecorator
 
-from nti.externalization.singleton import SingletonDecorator
+from nti.externalization.singleton import Singleton
 
-from nti.links import links
+from nti.links.links import Link
+
+LINKS = StandardExternalFields.LINKS
+
+logger = __import__('logging').getLogger(__name__)
 
 
 def find_links(self):
@@ -32,18 +35,17 @@ def find_links(self):
     """
     _links = []
     if callable(getattr(self, 'iterenclosures', None)):
-        _links = [links.Link(enclosure, rel='enclosure')
-                  for enclosure
-                  in self.iterenclosures()]
+        _links = [
+            Link(enclosure, rel='enclosure')
+            for enclosure in self.iterenclosures()
+        ]
     _links.extend(getattr(self, 'links', ()))
     return _links
 
 
 @component.adapter(object)
 @interface.implementer(IExternalMappingDecorator)
-class LinkDecorator(object):
-
-    __metaclass__ = SingletonDecorator
+class LinkDecorator(Singleton):
 
     def decorateExternalMapping(self, context, result):
         # We have no way to know what order these will be
@@ -60,4 +62,4 @@ class LinkDecorator(object):
                 link.__parent__ = context
         _links.extend(orig_links)
         if _links:
-            result[StandardExternalFields.LINKS] = _links
+            result[LINKS] = _links
