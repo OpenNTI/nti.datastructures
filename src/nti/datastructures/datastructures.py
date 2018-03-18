@@ -152,7 +152,7 @@ class VolatileFunctionProperty(PropertyHoldingPersistent):
         self.default = default
 
     def __get__(self, instance, unused_owner=None):
-        if instance is None:
+        if instance is None:  # pragma: no cover
             return self
         return getattr(instance, self.volatile_name, self.default)
 
@@ -261,7 +261,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                     try:
                         setattr(orig, StandardInternalFields.ID,
                                 text_(str(len(c) - 1)))
-                    except AttributeError:
+                    except AttributeError:  # pragma: no cover
                         logger.debug("Failed to set id", exc_info=True)
 
         def _get_in_container(c, i, d=None):
