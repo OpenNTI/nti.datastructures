@@ -18,8 +18,6 @@ from hamcrest import has_property
 from hamcrest import same_instance
 from hamcrest import greater_than_or_equal_to
 
-from nose.tools import assert_raises
-
 import unittest
 
 from nti.coremetadata.mixins import ZContainedMixin
@@ -119,7 +117,7 @@ class TestContainedStorage(unittest.TestCase):
         obj = self.C()
         obj.containerId = u'foo'
         obj.id = old_id
-        with assert_raises(KeyError):
+        with self.assertRaises(KeyError):
             cs.addContainedObject(obj)
 
     def test_container_type(self):
