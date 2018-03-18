@@ -208,7 +208,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         self.set_ids = set_ids  # read-only
         self._setup()
 
-        for k, v in (containers or {}).iteritems():
+        for k, v in (containers or {}).items():
             # Notice that we're not using addContainer: these don't
             # become our children.
             self.containers[k] = v
@@ -267,7 +267,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 
         def _remove_in_container(c, d):
             if isinstance(c, collections.Mapping):
-                for k, v in c.iteritems():
+                for k, v in c.items():
                     if v == d:
                         del c[k]
                         return v
@@ -579,9 +579,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                         if IBroken.providedBy(value):
                             result += 1
                             del container[name]
-                            logger.warn("Removing broken object %s,%s",
-                                        name,
-                                        type(value))
+                            logger.warning("Removing broken object %s,%s",
+                                           name, type(value))
                         elif hasattr(value, '_p_activate'):
                             value._p_activate()
                 except POSError:
