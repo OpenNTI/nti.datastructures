@@ -19,11 +19,18 @@ from hamcrest import greater_than_or_equal_to
 
 import unittest
 
+from zope import interface
+
+from zope.location.interfaces import IContained as IZContained
+
+from nti.coremetadata.interfaces import IContained
+
 from nti.coremetadata.mixins import ZContainedMixin
 
 from nti.datastructures.datastructures import isSyntheticKey
 from nti.datastructures.datastructures import ContainedStorage
 from nti.datastructures.datastructures import ContainedObjectValueError
+from nti.datastructures.datastructures import check_contained_object_for_storage
 
 from nti.dublincore.datastructures import CreatedModDateTrackingObject
 
@@ -134,3 +141,19 @@ class TestContainedStorage(unittest.TestCase):
             def __repr__(self, *args, **kwargs):
                 raise Exception
         ContainedObjectValueError('xx', FakeContained())
+    
+    def test_check_contained_object_for_storage(self):
+        class FakeContained(object):
+            containerId = None
+
+        contained = FakeContained()
+        with self.assertRaises(ContainedObjectValueError):
+            check_contained_object_for_storage(contained)
+
+        interface.alsoProvides(contained, IZContained)
+        with self.assertRaises(ContainedObjectValueError):
+            check_contained_object_for_storage(contained)
+            
+        interface.alsoProvides(contained, IContained)
+        with self.assertRaises(ContainedObjectValueError):
+            check_contained_object_for_storage(contained)
