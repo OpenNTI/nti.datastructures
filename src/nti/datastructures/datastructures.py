@@ -145,7 +145,7 @@ def check_contained_object_for_storage(contained):
                                         contained)
 
 
-class _VolatileFunctionProperty(PropertyHoldingPersistent):
+class VolatileFunctionProperty(PropertyHoldingPersistent):
 
     def __init__(self, volatile_name, default=_noop):
         self.volatile_name = volatile_name
@@ -158,6 +158,7 @@ class _VolatileFunctionProperty(PropertyHoldingPersistent):
 
     def __set__(self, instance, value):
         setattr(instance, self.volatile_name, value)
+_VolatileFunctionProperty = VolatileFunctionProperty
 
 
 @interface.implementer(IZContained, ISublocations)
