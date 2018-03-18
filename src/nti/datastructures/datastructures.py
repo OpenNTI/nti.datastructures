@@ -132,12 +132,12 @@ _ContainedObjectValueError = ContainedObjectValueError
 
 
 def check_contained_object_for_storage(contained):
-    if not IContained.providedBy(contained):
-        raise ContainedObjectValueError("Contained object is not " + str(IContained),
-                                        contained)
-
     if not IZContained.providedBy(contained):
         raise ContainedObjectValueError("Contained object is not " + str(IZContained),
+                                        contained)
+
+    if not IContained.providedBy(contained):
+        raise ContainedObjectValueError("Contained object is not " + str(IContained),
                                         contained)
 
     if not getattr(contained, 'containerId'):
