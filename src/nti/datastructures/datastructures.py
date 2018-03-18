@@ -69,13 +69,13 @@ def _syntheticKeys():
             StandardExternalFields.LAST_MODIFIED)
 
 
-def _isMagicKey(key):
+def isSyntheticKey(key):
     """
     For our mixin objects that have special keys, defines
     those keys that are special and not settable by the user.
     """
     return key in _syntheticKeys()
-isSyntheticKey = _isMagicKey
+_isMagicKey = isSyntheticKey
 
 
 # For speed and use in this function, we declare an 'inline'-able attribute
