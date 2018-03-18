@@ -292,19 +292,20 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         self._v_removeFromContainer = _remove_in_container
 
     # pylint: disable=method-hidden
-    def _v_wrap(self, obj):
+
+    def _v_wrap(self, obj):  # pragma: no cover
         pass
 
-    def _v_unwrap(self, obj):
+    def _v_unwrap(self, obj):  # pragma: no cover
         pass
 
     def _v_create(self, obj):
         pass
 
-    def _v_putInContainer(self, obj, orig):
+    def _v_putInContainer(self, obj, orig):  # pragma: no cover
         pass
 
-    def _v_getInContainer(self, obj, defv=None):
+    def _v_getInContainer(self, obj, defv=None):  # pragma: no cover
         pass
 
     def _v_removeFromContainer(self, o):
