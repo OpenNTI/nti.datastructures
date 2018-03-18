@@ -21,11 +21,15 @@ import unittest
 
 from nti.coremetadata.mixins import ZContainedMixin
 
+from nti.datastructures.datastructures import isSyntheticKey
 from nti.datastructures.datastructures import ContainedStorage
+from nti.datastructures.datastructures import ContainedObjectValueError
 
 from nti.dublincore.datastructures import CreatedModDateTrackingObject
 
 from nti.datastructures.tests import SharedConfiguringTestLayer
+
+from nti.externalization.interfaces import StandardExternalFields
 
 from nti.externalization.persistence import PersistentExternalizableList
 
@@ -119,3 +123,14 @@ class TestContainedStorage(unittest.TestCase):
         cs.deleteContainedObject(obj.containerId, obj.id)
 
         assert_that(cs.lastModified, is_(greater_than_or_equal_to(lm_add)))
+
+    def test_isSyntheticKey(self):
+        assert_that(isSyntheticKey(StandardExternalFields.OID),
+                    is_(True))
+        
+    def test_valueError(self):
+        ContainedObjectValueError('xx')
+        class FakeContained(object):
+            def __repr__(self, *args, **kwargs):
+                raise Exception
+        ContainedObjectValueError('xx', FakeContained())
