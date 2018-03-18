@@ -7,7 +7,6 @@ from __future__ import absolute_import
 
 # pylint: disable=protected-access,too-many-public-methods,arguments-differ
 
-from nti.testing.layers import find_test
 from nti.testing.layers import GCLayerMixin
 from nti.testing.layers import ZopeComponentLayer
 from nti.testing.layers import ConfiguringLayerMixin
