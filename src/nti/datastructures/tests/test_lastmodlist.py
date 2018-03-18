@@ -11,6 +11,7 @@ from hamcrest import is_
 from hamcrest import assert_that
 from hamcrest import has_property
 
+import pickle
 import unittest
 
 from nti.datastructures.datastructures import LastModifiedCopyingUserList
@@ -45,3 +46,8 @@ class TestLastModifiedCopyingUserList(unittest.TestCase):
         l += LastModifiedCopyingUserList([1, 2, 3])
         assert_that(l.lastModified, is_(0))
         assert_that(l, is_([1, 2, 3]))
+
+    def test_pickle(self):
+        user_list = LastModifiedCopyingUserList()
+        with self.assertRaises(TypeError):
+            pickle.dumps(user_list)
