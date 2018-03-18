@@ -1,23 +1,30 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Datatypes and datatype handling.
-
 .. $Id$
 """
 
-from __future__ import print_function, absolute_import, division
-__docformat__ = "restructuredtext en"
-
-logger = __import__('logging').getLogger(__name__)
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import logging
 import weakref
 import collections
 
+from BTrees.OOBTree import OOBTree
+
+from persistent.wref import WeakRef
+
+from ZODB.interfaces import IBroken
+from ZODB.interfaces import IConnection
+
+from ZODB.POSException import POSError
+
 from zope import interface
 
 from zope.container.constraints import checkObject
+
 from zope.container.interfaces import InvalidItemType
 
 from zope.location import locate as loc_locate
@@ -25,15 +32,6 @@ from zope.location import locate as loc_locate
 from zope.location.interfaces import ILocation
 from zope.location.interfaces import ISublocations
 from zope.location.interfaces import IContained as IZContained
-
-from ZODB.interfaces import IBroken
-from ZODB.interfaces import IConnection
-
-from ZODB.POSException import POSError
-
-from BTrees.OOBTree import OOBTree
-
-from persistent.wref import WeakRef
 
 from nti.base._compat import text_
 
@@ -58,6 +56,8 @@ from nti.ntiids.oids import to_external_ntiid_oid
 
 from nti.zodb.persistentproperty import PersistentPropertyHolder
 from nti.zodb.persistentproperty import PropertyHoldingPersistent
+
+logger = __import__('logging').getLogger(__name__)
 
 
 def _syntheticKeys():
@@ -94,22 +94,26 @@ class LastModifiedCopyingUserList(ModDateTrackingObject, list):
 
     def extend(self, other):
         super(LastModifiedCopyingUserList, self).extend(other)
-        self.updateLastModIfGreater(getattr(other, 'lastModified', self.lastModified))
+        self.updateLastModIfGreater(
+            getattr(other, 'lastModified', self.lastModified)
+        )
 
     def __iadd__(self, other):
         result = super(LastModifiedCopyingUserList, self).__iadd__(other)
-        self.updateLastModIfGreater(getattr(other, 'lastModified', self.lastModified))
+        self.updateLastModIfGreater(
+            getattr(other, 'lastModified', self.lastModified)
+        )
         return result
 
     def __reduce__(self):
         raise TypeError("Transient object.")
 
 
-def _noop(*args):
+def _noop(*unused_args):
     pass
 
 
-class _ContainedObjectValueError(ValueError):
+class ContainedObjectValueError(ValueError):
     """
     A more naturally descriptive exception for contained objects.
     """
@@ -119,23 +123,26 @@ class _ContainedObjectValueError(ValueError):
         cstr = 'Unable to determine'
         try:
             cstr = repr(contained)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             cstr = u'{%s}' % e
-        super(_ContainedObjectValueError, self).__init__("%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs))
+        super(_ContainedObjectValueError, self).__init__(
+            "%s [type: %s repr %s]%s" % (string, ctype, cstr, kwargs)
+        )
+_ContainedObjectValueError = ContainedObjectValueError
 
 
 def check_contained_object_for_storage(contained):
     if not IContained.providedBy(contained):
-        raise _ContainedObjectValueError("Contained object is not " + str(IContained),
-                                         contained)
+        raise ContainedObjectValueError("Contained object is not " + str(IContained),
+                                        contained)
 
     if not IZContained.providedBy(contained):
-        raise _ContainedObjectValueError("Contained object is not " + str(IZContained),
-                                         contained)
+        raise ContainedObjectValueError("Contained object is not " + str(IZContained),
+                                        contained)
 
     if not getattr(contained, 'containerId'):
-        raise _ContainedObjectValueError("Contained object has empty containerId",
-                                         contained)
+        raise ContainedObjectValueError("Contained object has empty containerId",
+                                        contained)
 
 
 class _VolatileFunctionProperty(PropertyHoldingPersistent):
@@ -144,7 +151,7 @@ class _VolatileFunctionProperty(PropertyHoldingPersistent):
         self.volatile_name = volatile_name
         self.default = default
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, unused_owner=None):
         if instance is None:
             return self
         return getattr(instance, self.volatile_name, self.default)
@@ -283,6 +290,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         self._v_getInContainer = _get_in_container
         self._v_removeFromContainer = _remove_in_container
 
+    # pylint: disable=method-hidden
     def _v_wrap(self, obj):
         pass
 
@@ -356,6 +364,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         if container is None:
             container = self.containerType()
             if IConnection(self, None) is not None and hasattr(container, '_p_jar'):
+                # pylint: disable=too-many-function-args
                 IConnection(self).add(container)
             self.addContainer(containerId, container)
         return container
@@ -405,19 +414,21 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                         return existing  # Nothing more do do
                     # OK, so it's not contained. Is it broken?
                     if IBroken not in interface.providedBy(existing):
+                        # pylint: disable=unused-variable
                         __traceback_info__ = contained, existing
-                        raise KeyError("Contained object uses existing ID " + str(contained.id))
+                        raise KeyError("Contained object uses existing ID %s" % contained.id)
 
         # Save
         if not contained.id and not self.set_ids:
-            raise _ContainedObjectValueError("Contained object has no id and we are not allowed to give it one.",
-                                             contained)
+            raise ContainedObjectValueError("Contained object has no id and we are not allowed to give it one.",
+                                            contained)
 
         # Add to the connection so it can start creating an OID
         # if we are saved, and it is Persistent but unsaved
         if      IConnection(self, None) is not None \
             and IConnection(contained, None) is None \
             and hasattr(contained, '_p_jar'):
+            # pylint: disable=too-many-function-args
             IConnection(self).add(contained)
 
         self._v_create(contained)
@@ -468,7 +479,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         """
         # In order to share the maximum amount of code, we are first
         # looking the object up and then removing it by equality.
-        # NOTE: The reverse DOES NOT work. We may not find the right
+        # The reverse DOES NOT work. We may not find the right
         # objects by containedId (if our containers are not maps but lists,
         # and we are just holding shared objects we do not own)
         return self.deleteEqualContainedObject(self.getContainedObject(containerId, containedId))
@@ -488,21 +499,23 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             return None
         container = self.containers.get(contained.containerId)
         if container is None:
-            logger.log(
-                log_level,
-                "Unable to delete object we (%r) have no container for: %s (%s) (%s) (%s %r %r %r)",
-                self,
-                contained.containerId, list(self.containers.keys()),
-                self.containers._p_state,
-                self.containers._p_jar,
-                self.containers._p_oid,
-                self.containers._p_serial,
-                contained)
+            # pylint: disable=protected-access
+            logger.log(log_level,
+                       "Unable to delete object we (%r) have no container for: %s (%s) (%s) (%s %r %r %r)",
+                       self,
+                       contained.containerId, list(self.containers.keys()),
+                       self.containers._p_state,
+                       self.containers._p_jar,
+                       self.containers._p_oid,
+                       self.containers._p_serial,
+                       contained)
             return None
 
         wrapped = self._v_wrap(contained)  # outside the catch
         try:
-            contained = self._v_unwrap(self._v_removeFromContainer(container, wrapped))
+            contained = self._v_unwrap(
+                self._v_removeFromContainer(container, wrapped)
+            )
         except ValueError:
             logger.log(log_level,
                        "Failed to find object to delete equal to %s",
@@ -524,8 +537,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             tmp = list(container)
             del container[:]
             for weak in tmp:
-                if    cid == getattr(weak, 'oid', None) \
-                   or cid == getattr(weak, '_p_oid', None):
+                if     cid == getattr(weak, 'oid', None) \
+                    or cid == getattr(weak, '_p_oid', None):
                     continue
                 strong = weak if not callable(weak) else weak()
                 if strong is not None and strong != contained:
@@ -582,6 +595,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                             logger.warning("Removing broken object %s,%s",
                                            name, type(value))
                         elif hasattr(value, '_p_activate'):
+                            # pylint: disable=protected-access
                             value._p_activate()
                 except POSError:
                     result += 1
@@ -617,11 +631,11 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                 yield v
 
     def sublocations(self):
-        return (container for container
-                in self.itervalues()
-                # Recall that we could be holding containers given to __init__
-                # that we are not the parent of
-                if ILocation.providedBy(container) and container.__parent__ is self)
+        for container in self.itervalues():
+            # Recall that we could be holding containers given to __init__
+            # that we are not the parent of
+            if ILocation.providedBy(container) and container.__parent__ is self:
+                yield container
 
     def __repr__(self):
         return "<%s size: %s name: %s>" % (self.__class__.__name__,
@@ -650,7 +664,7 @@ class AbstractNamedLastModifiedBTreeContainer(LastModifiedBTreeContainer):
     contained_type = None
     container_name = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # pylint: disable=useless-super-delegation
         super(AbstractNamedLastModifiedBTreeContainer, self).__init__(*args, **kwargs)
 
     def __setitem__(self, key, item):
