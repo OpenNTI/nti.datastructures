@@ -11,7 +11,9 @@ from hamcrest import is_
 from hamcrest import none
 from hamcrest import is_in
 from hamcrest import is_not
+from hamcrest import contains
 from hamcrest import not_none
+from hamcrest import has_length
 from hamcrest import instance_of
 from hamcrest import assert_that
 from hamcrest import has_property
@@ -151,17 +153,22 @@ class TestContainedStorage(unittest.TestCase):
         obj.containerId = u'a'
         cs.addContainedObject(obj)
 
-        cs.getContainedObject('foo', '0')
-        cs.getContainedObject('a', '0')
+        assert_that(cs.getContainedObject('foo', '0'), is_(none()))
+        assert_that(cs.getContainedObject('a', '0'), is_(none()))
 
     def test_list_container(self):
-        cs = ContainedStorage(
-            create=True, containerType=PersistentExternalizableList)
+        cs = ContainedStorage(create=True,
+                              containerType=PersistentExternalizableList)
         obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.getContainedObject('foo', 0), is_(obj))
         assert_that(cs.getContainedObject('foo', 1), is_(none()))
+
+        assert_that(list(cs), has_length(1))
+        assert_that(cs, contains('foo'))
+        assert_that(cs['foo'], is_not(none()))
+        assert_that(list(cs.iteritems()), has_length(1))
 
     def test_last_modified(self):
         cs = ContainedStorage()
@@ -176,6 +183,7 @@ class TestContainedStorage(unittest.TestCase):
         obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
+
         lm_add = cs.lastModified
         assert_that(cs.lastModified, is_not(0))
         assert_that(cs.lastModified, is_(cs.getContainer('foo').lastModified))
@@ -295,6 +303,7 @@ class TestContainedStorage(unittest.TestCase):
         assert_that(cs.deleteEqualContainedObject(obj),
                     is_(none()))
         cs.addContainedObject(obj)
+
         mock_re.is_callable().raises(TypeError)
         with self.assertRaises(TypeError):
             cs.deleteEqualContainedObject(obj)
