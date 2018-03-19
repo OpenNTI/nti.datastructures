@@ -16,3 +16,8 @@ Decorators
 ==========
 
 .. automodule:: nti.datastructures.decorators
+
+Interfaces
+==========
+
+.. automodule:: nti.datastructures.interfaces
