@@ -49,7 +49,7 @@ class TestHomogeneousTypeContainer(unittest.TestCase):
         class TestContainer(AbstractNamedLastModifiedBTreeContainer):
             container_name = "test_container"
             contained_type = ITest
-            
+
         container = TestContainer()
         with self.assertRaises(InvalidItemType):
             container['foo'] = ZContainedMixin()
