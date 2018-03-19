@@ -452,8 +452,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 
         __traceback_info__ = container, contained.containerId, contained.id
         if contained.id is None:
-            raise _ContainedObjectValueError("Unable to determine contained id",
-                                             contained)
+            raise ContainedObjectValueError("Unable to determine contained id",
+                                            contained)
 
         self._v_putInContainer(container,
                                contained.id,
@@ -486,6 +486,9 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         # and we are just holding shared objects we do not own)
         return self.deleteEqualContainedObject(self.getContainedObject(containerId, containedId))
 
+    def doRemoveFromContainer(self, container, wrapped):
+        return self._v_removeFromContainer(container, wrapped)
+
     def deleteEqualContainedObject(self, contained, log_level=logging.DEBUG):
         """
         Given an object contained herein, removes it. Returns the removed
@@ -505,7 +508,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             logger.log(log_level,
                        "Unable to delete object we (%r) have no container for: %s (%s) (%s) (%s %r %r %r)",
                        self,
-                       contained.containerId, list(self.containers.keys()),
+                       contained.containerId,
+                       list(self.containers.keys()),
                        self.containers._p_state,
                        self.containers._p_jar,
                        self.containers._p_oid,
@@ -516,7 +520,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         wrapped = self._v_wrap(contained)  # outside the catch
         try:
             contained = self._v_unwrap(
-                self._v_removeFromContainer(container, wrapped)
+                self.doRemoveFromContainer(container, wrapped)
             )
         except ValueError:
             logger.log(log_level,
@@ -539,17 +543,16 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             tmp = list(container)
             del container[:]
             for weak in tmp:
-                if     cid == getattr(weak, 'oid', None) \
-                    or cid == getattr(weak, '_p_oid', None):
-                    continue
-                strong = weak if not callable(weak) else weak()
-                if strong is not None and strong != contained:
-                    container.append(strong)
-                else:
-                    logger.log(log_level,
-                               "Dropping obj by equality/missing during delete %s == %s",
-                               strong,
-                               contained)
+                if      cid != getattr(weak, 'oid', None) \
+                    and cid != getattr(weak, '_p_oid', None):
+                    strong = weak if not callable(weak) else weak()
+                    if strong is not None and strong != contained:
+                        container.append(strong)
+                    else:
+                        logger.log(log_level,
+                                   "Dropping obj by equality/missing during delete %s == %s",
+                                   strong,
+                                   contained)
             return None
         else:
             self._updateContainerLM(container)

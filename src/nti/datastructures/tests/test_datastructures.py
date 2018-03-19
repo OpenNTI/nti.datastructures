@@ -22,13 +22,18 @@ from hamcrest import greater_than_or_equal_to
 import pickle
 import unittest
 
+import fudge
+
 from ZODB.interfaces import IConnection
 
 from zope import interface
 
+from zope.component.factory import Factory
+
 from zope.location.interfaces import IContained as IZContained
 
 from nti.coremetadata.interfaces import IContained
+from nti.coremetadata.interfaces import IHTC_NEW_FACTORY
 
 from nti.coremetadata.mixins import ZContainedMixin
 
@@ -37,8 +42,10 @@ from nti.datastructures.datastructures import ContainedStorage
 from nti.datastructures.datastructures import VolatileFunctionProperty
 from nti.datastructures.datastructures import ContainedObjectValueError
 from nti.datastructures.datastructures import check_contained_object_for_storage
+from nti.datastructures.datastructures import AbstractNamedLastModifiedBTreeContainer
 
 from nti.dublincore.datastructures import CreatedModDateTrackingObject
+from nti.dublincore.datastructures import PersistentCreatedModDateTrackingObject
 
 from nti.datastructures.tests import WithMockDS
 from nti.datastructures.tests import SharedConfiguringTestLayer
@@ -52,18 +59,33 @@ from nti.externalization.persistence import PersistentExternalizableList
 from nti.ntiids.oids import to_external_ntiid_oid
 
 
+class UniqueKeyPersistentContained(ZContainedMixin,
+                                   PersistentCreatedModDateTrackingObject):
+    containerId = 'foo'
+
+    def to_container_key(self):
+        return "unique-key" 
+
+
+class SampleContained(CreatedModDateTrackingObject, ZContainedMixin):
+
+    def to_container_key(self):
+        return to_external_ntiid_oid(self, default_oid=str(id(self)))
+
+
+class SamplePersistentContained(ZContainedMixin, PersistentCreatedModDateTrackingObject):
+
+    def to_container_key(self):
+        return to_external_ntiid_oid(self, default_oid=str(id(self)))
+
+
 class TestContainedStorage(unittest.TestCase):
 
     layer = SharedConfiguringTestLayer
 
-    class C(CreatedModDateTrackingObject, ZContainedMixin):
-
-        def to_container_key(self):
-            return to_external_ntiid_oid(self, default_oid=str(id(self)))
-
     def test_idempotent_add_even_when_wrapped(self):
         cs = ContainedStorage(weak=True)
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
 
@@ -72,7 +94,7 @@ class TestContainedStorage(unittest.TestCase):
 
         # But a new one breaks
         old_id = obj.id
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         obj.id = old_id
         with self.assertRaises(KeyError):
@@ -90,7 +112,7 @@ class TestContainedStorage(unittest.TestCase):
     def test_container_type(self):
         # Do all the operations work with dictionaries?
         cs = ContainedStorage(containerType=dict)
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.getContainer('foo'),
@@ -119,10 +141,10 @@ class TestContainedStorage(unittest.TestCase):
         # plus inserted containers that don't share the same
         # inheritance tree.
         cs = ContainedStorage(containers={u'a': dict()})
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'a'
         cs.addContainedObject(obj)
 
@@ -132,7 +154,7 @@ class TestContainedStorage(unittest.TestCase):
     def test_list_container(self):
         cs = ContainedStorage(
             create=True, containerType=PersistentExternalizableList)
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.getContainedObject('foo', 0), is_(obj))
@@ -140,7 +162,7 @@ class TestContainedStorage(unittest.TestCase):
 
     def test_last_modified(self):
         cs = ContainedStorage()
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
         assert_that(cs.lastModified, is_not(0))
@@ -148,7 +170,7 @@ class TestContainedStorage(unittest.TestCase):
 
     def test_delete_contained_updates_lm(self):
         cs = ContainedStorage(containerType=PersistentExternalizableList)
-        obj = self.C()
+        obj = SampleContained()
         obj.containerId = u'foo'
         cs.addContainedObject(obj)
         lm_add = cs.lastModified
@@ -203,3 +225,84 @@ class TestContainedStorage(unittest.TestCase):
             conn.add(cs)
             container = cs.getOrCreateContainer('foo')
             assert_that(IConnection(container, None), is_not(none()))
+
+    def test_htc_factory(self):
+
+        class ITest(IZContained):
+            pass
+
+        @interface.implementer(ITest)
+        class Test(object):
+            def __init__(self, *args):
+                pass
+
+        # pylint: disable=no-value-for-parameter
+        ITest.setTaggedValue(IHTC_NEW_FACTORY,
+                             Factory(Test, interfaces=(ITest,)))
+
+        class TestContainer(AbstractNamedLastModifiedBTreeContainer):
+            container_name = "test_container"
+            contained_type = ITest
+
+        containers = ContainedStorage(containers={
+            "test_container": TestContainer()}
+        )
+        result = containers.maybeCreateContainedObjectWithType(
+            "test_container", None
+        )
+        assert_that(result, is_(Test))
+
+    
+    @WithMockDS
+    @fudge.patch('nti.datastructures.datastructures.to_external_ntiid_oid')
+    def test_add_container_object(self, mock_te):
+        # no id contained
+        cs = ContainedStorage(set_ids=False,
+                              create=True,
+                              containerType=PersistentExternalizableList)
+
+        class NoIdContained(ZContainedMixin):
+            containerId = 'foo'
+
+        with self.assertRaises(ContainedObjectValueError):
+            cs.addContainedObject(NoIdContained())
+
+        # same unique id
+        mock_te.is_callable().returns('xyz')
+        with mock_db_trans() as conn:
+            cs = ContainedStorage(create=True)
+            conn.add(cs)
+            cs.addContainedObject(UniqueKeyPersistentContained())
+
+            # adding the same get a new id
+            c = UniqueKeyPersistentContained()
+            cs.addContainedObject(c)
+            assert_that(c, has_property('id', is_('xyz')))
+
+            mock_te.is_callable().returns(None)
+            with self.assertRaises(ContainedObjectValueError):
+                cs.addContainedObject(UniqueKeyPersistentContained())
+
+    @fudge.patch('nti.datastructures.datastructures.ContainedStorage.doRemoveFromContainer')
+    def test_delete_equal_contained_object(self, mock_re):
+        cs = ContainedStorage(create=True)
+        assert_that(cs.deleteEqualContainedObject(None),
+                    is_(none()))
+        obj = SamplePersistentContained()
+        obj.containerId = u'foo'
+        assert_that(cs.deleteEqualContainedObject(obj),
+                    is_(none()))
+        cs.addContainedObject(obj)
+        mock_re.is_callable().raises(TypeError)
+        with self.assertRaises(TypeError):
+            cs.deleteEqualContainedObject(obj)
+
+        cs = ContainedStorage(create=True,
+                              weak=True,
+                              containerType=PersistentExternalizableList)
+        # add duplicates
+        cs.addContainedObject(obj)
+        cs.addContainedObject(obj)
+        cs.addContainedObject(SamplePersistentContained(containerId=u'foo'))
+        # delete should leave last object
+        cs.deleteEqualContainedObject(obj)
