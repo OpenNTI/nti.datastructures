@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
+import six
 import logging
 import weakref
 import collections
@@ -33,19 +34,17 @@ from zope.location.interfaces import ILocation
 from zope.location.interfaces import ISublocations
 from zope.location.interfaces import IContained as IZContained
 
-from nti.base._compat import text_
-
 from nti.base.interfaces import ILastModified
 
 from nti.containers.containers import LastModifiedBTreeContainer
 from nti.containers.containers import CheckingLastModifiedBTreeContainer
 from nti.containers.containers import CaseInsensitiveLastModifiedBTreeContainer
 
-from nti.coremetadata.interfaces import IHTC_NEW_FACTORY
-
 from nti.coremetadata.interfaces import IContained
 from nti.coremetadata.interfaces import INamedContainer
-from nti.coremetadata.interfaces import IHomogeneousTypeContainer
+
+from nti.datastructures.interfaces import IHTC_NEW_FACTORY
+from nti.datastructures.interfaces import IHomogeneousTypeContainer
 
 from nti.dublincore.time_mixins import ModDateTrackingObject
 
@@ -260,7 +259,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                 if self.set_ids:
                     try:
                         setattr(orig, StandardInternalFields.ID,
-                                text_(str(len(c) - 1)))
+                                six.text_type(str(len(c) - 1)))
                     except AttributeError:  # pragma: no cover
                         logger.debug("Failed to set id", exc_info=True)
 
