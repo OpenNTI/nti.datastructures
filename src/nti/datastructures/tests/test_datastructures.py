@@ -345,11 +345,13 @@ class TestContainedStorage(unittest.TestCase):
         def _p_activate(*unused_args):
             raise POSError()
 
-        broken = SampleContained(containerId='foo')
+        broken = SampleContained()
+        broken.containerId = 'foo'
         interface.alsoProvides(broken, IBroken)
         cs.addContainedObject(broken)
 
-        bad = SampleContained(containerId='foo')
+        bad = SampleContained()
+        bad.containerId = 'foo'
         cs.addContainedObject(bad)
         # pylint: disable=attribute-defined-outside-init
         bad._p_activate = _p_activate
