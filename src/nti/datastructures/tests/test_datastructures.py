@@ -24,7 +24,10 @@ import unittest
 
 import fudge
 
+from ZODB.interfaces import IBroken
 from ZODB.interfaces import IConnection
+
+from ZODB.POSException import POSError
 
 from zope import interface
 
@@ -64,7 +67,7 @@ class UniqueKeyPersistentContained(ZContainedMixin,
     containerId = 'foo'
 
     def to_container_key(self):
-        return "unique-key" 
+        return "unique-key"
 
 
 class SampleContained(CreatedModDateTrackingObject, ZContainedMixin):
@@ -252,7 +255,6 @@ class TestContainedStorage(unittest.TestCase):
         )
         assert_that(result, is_(Test))
 
-    
     @WithMockDS
     @fudge.patch('nti.datastructures.datastructures.to_external_ntiid_oid')
     def test_add_container_object(self, mock_te):
@@ -306,3 +308,25 @@ class TestContainedStorage(unittest.TestCase):
         cs.addContainedObject(SamplePersistentContained(containerId=u'foo'))
         # delete should leave last object
         cs.deleteEqualContainedObject(obj)
+
+    def test_get_contained_object(self):
+        cs = ContainedStorage(create=True)
+        assert_that(cs.getContainedObject('foo', 'id'),
+                    is_(none()))
+
+    def test_clean_broken(self):
+        cs = ContainedStorage(create=True)
+
+        def _p_activate(*unused_args):
+            raise POSError()
+
+        broken = SampleContained(containerId='foo')
+        interface.alsoProvides(broken, IBroken)
+        cs.addContainedObject(broken)
+
+        bad = SampleContained(containerId='foo')
+        cs.addContainedObject(bad)
+        # pylint: disable=attribute-defined-outside-init
+        bad._p_activate = _p_activate
+
+        assert_that(cs.cleanBroken(), is_(2))
