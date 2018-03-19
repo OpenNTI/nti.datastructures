@@ -21,6 +21,8 @@ from hamcrest import greater_than
 from hamcrest import same_instance
 from hamcrest import greater_than_or_equal_to
 
+from nti.testing.matchers import validly_provides
+
 import pickle
 import unittest
 
@@ -35,6 +37,7 @@ from zope import interface
 
 from zope.component.factory import Factory
 
+from zope.location.interfaces import ISublocations
 from zope.location.interfaces import IContained as IZContained
 
 from nti.coremetadata.interfaces import IContained
@@ -114,6 +117,10 @@ class TestContainedStorage(unittest.TestCase):
         with self.assertRaises(KeyError):
             cs.deleteContainer('foo2')
 
+        assert_that(cs, validly_provides(ISublocations))
+        assert_that(list(cs.sublocations()),
+                    has_length(1))
+
     def test_container_type(self):
         # Do all the operations work with dictionaries?
         cs = ContainedStorage(containerType=dict)
@@ -170,13 +177,22 @@ class TestContainedStorage(unittest.TestCase):
         assert_that(cs['foo'], is_not(none()))
         assert_that(list(cs.iteritems()), has_length(1))
 
+        repr(cs)
+        assert_that(list(cs.iter_all_contained_objects()),
+                    is_([obj]))
+
+        assert_that(cs, validly_provides(ISublocations))
+        assert_that(list(cs.sublocations()),
+                    is_([]))
+
     def test_last_modified(self):
         cs = ContainedStorage()
         obj = SampleContained()
         obj.containerId = 'foo'
         cs.addContainedObject(obj)
         assert_that(cs.lastModified, is_not(0))
-        assert_that(cs.lastModified, is_(cs.getContainer('foo').lastModified))
+        assert_that(cs.lastModified,
+                    is_(cs.getContainer('foo').lastModified))
 
     def test_delete_contained_updates_lm(self):
         cs = ContainedStorage(containerType=PersistentExternalizableList)
