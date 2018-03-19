@@ -587,27 +587,25 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
     def cleanBroken(self):
         result = 0
         for container in self.itervalues():
-            is_mapping = isinstance(container, collections.Mapping)
-            if not is_mapping:
-                continue
-            for name, value in list(container.items()):
-                try:
-                    value = self._v_wrap(value)
-                    if value is not None:
-                        if IBroken.providedBy(value):
-                            result += 1
-                            del container[name]
-                            logger.warning("Removing broken object %s,%s",
-                                           name, type(value))
-                        elif hasattr(value, '_p_activate'):
-                            # pylint: disable=protected-access
-                            value._p_activate()
-                except POSError:
-                    result += 1
-                    del container[name]
-                    logger.warn("Removing broken object %s,%s",
-                                name,
-                                type(value))
+            if isinstance(container, collections.Mapping):
+                for name, value in list(container.items()):
+                    try:
+                        value = self._v_wrap(value)
+                        if value is not None:
+                            if IBroken.providedBy(value):
+                                result += 1
+                                del container[name]
+                                logger.warning("Removing broken object %s,%s",
+                                               name, type(value))
+                            elif hasattr(value, '_p_activate'):
+                                # pylint: disable=protected-access
+                                value._p_activate()
+                    except POSError:
+                        result += 1
+                        del container[name]
+                        logger.warning("Removing broken object %s,%s",
+                                       name,
+                                       type(value))
         return result
 
     def __iter__(self):
