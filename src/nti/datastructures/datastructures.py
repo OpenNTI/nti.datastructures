@@ -69,13 +69,13 @@ def _syntheticKeys():
             StandardExternalFields.LAST_MODIFIED)
 
 
-def _isMagicKey(key):
+def isSyntheticKey(key):
     """
     For our mixin objects that have special keys, defines
     those keys that are special and not settable by the user.
     """
     return key in _syntheticKeys()
-isSyntheticKey = _isMagicKey
+_isMagicKey = isSyntheticKey
 
 
 # For speed and use in this function, we declare an 'inline'-able attribute
@@ -132,12 +132,12 @@ _ContainedObjectValueError = ContainedObjectValueError
 
 
 def check_contained_object_for_storage(contained):
-    if not IContained.providedBy(contained):
-        raise ContainedObjectValueError("Contained object is not " + str(IContained),
-                                        contained)
-
     if not IZContained.providedBy(contained):
         raise ContainedObjectValueError("Contained object is not " + str(IZContained),
+                                        contained)
+
+    if not IContained.providedBy(contained):
+        raise ContainedObjectValueError("Contained object is not " + str(IContained),
                                         contained)
 
     if not getattr(contained, 'containerId'):
@@ -145,19 +145,20 @@ def check_contained_object_for_storage(contained):
                                         contained)
 
 
-class _VolatileFunctionProperty(PropertyHoldingPersistent):
+class VolatileFunctionProperty(PropertyHoldingPersistent):
 
     def __init__(self, volatile_name, default=_noop):
         self.volatile_name = volatile_name
         self.default = default
 
     def __get__(self, instance, unused_owner=None):
-        if instance is None:
+        if instance is None:  # pragma: no cover
             return self
         return getattr(instance, self.volatile_name, self.default)
 
     def __set__(self, instance, value):
         setattr(instance, self.volatile_name, value)
+_VolatileFunctionProperty = VolatileFunctionProperty
 
 
 @interface.implementer(IZContained, ISublocations)
@@ -260,7 +261,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
                     try:
                         setattr(orig, StandardInternalFields.ID,
                                 text_(str(len(c) - 1)))
-                    except AttributeError:
+                    except AttributeError:  # pragma: no cover
                         logger.debug("Failed to set id", exc_info=True)
 
         def _get_in_container(c, i, d=None):
@@ -291,19 +292,20 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         self._v_removeFromContainer = _remove_in_container
 
     # pylint: disable=method-hidden
-    def _v_wrap(self, obj):
+
+    def _v_wrap(self, obj):  # pragma: no cover
         pass
 
-    def _v_unwrap(self, obj):
+    def _v_unwrap(self, obj):  # pragma: no cover
         pass
 
     def _v_create(self, obj):
         pass
 
-    def _v_putInContainer(self, obj, orig):
+    def _v_putInContainer(self, obj, orig):  # pragma: no cover
         pass
 
-    def _v_getInContainer(self, obj, defv=None):
+    def _v_getInContainer(self, obj, defv=None):  # pragma: no cover
         pass
 
     def _v_removeFromContainer(self, o):
@@ -450,8 +452,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
 
         __traceback_info__ = container, contained.containerId, contained.id
         if contained.id is None:
-            raise _ContainedObjectValueError("Unable to determine contained id",
-                                             contained)
+            raise ContainedObjectValueError("Unable to determine contained id",
+                                            contained)
 
         self._v_putInContainer(container,
                                contained.id,
@@ -484,6 +486,9 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         # and we are just holding shared objects we do not own)
         return self.deleteEqualContainedObject(self.getContainedObject(containerId, containedId))
 
+    def doRemoveFromContainer(self, container, wrapped):
+        return self._v_removeFromContainer(container, wrapped)
+
     def deleteEqualContainedObject(self, contained, log_level=logging.DEBUG):
         """
         Given an object contained herein, removes it. Returns the removed
@@ -503,7 +508,8 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             logger.log(log_level,
                        "Unable to delete object we (%r) have no container for: %s (%s) (%s) (%s %r %r %r)",
                        self,
-                       contained.containerId, list(self.containers.keys()),
+                       contained.containerId,
+                       list(self.containers.keys()),
                        self.containers._p_state,
                        self.containers._p_jar,
                        self.containers._p_oid,
@@ -514,7 +520,7 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
         wrapped = self._v_wrap(contained)  # outside the catch
         try:
             contained = self._v_unwrap(
-                self._v_removeFromContainer(container, wrapped)
+                self.doRemoveFromContainer(container, wrapped)
             )
         except ValueError:
             logger.log(log_level,
@@ -537,17 +543,16 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
             tmp = list(container)
             del container[:]
             for weak in tmp:
-                if     cid == getattr(weak, 'oid', None) \
-                    or cid == getattr(weak, '_p_oid', None):
-                    continue
-                strong = weak if not callable(weak) else weak()
-                if strong is not None and strong != contained:
-                    container.append(strong)
-                else:
-                    logger.log(log_level,
-                               "Dropping obj by equality/missing during delete %s == %s",
-                               strong,
-                               contained)
+                if      cid != getattr(weak, 'oid', None) \
+                    and cid != getattr(weak, '_p_oid', None):
+                    strong = weak if not callable(weak) else weak()
+                    if strong is not None and strong != contained:
+                        container.append(strong)
+                    else:
+                        logger.log(log_level,
+                                   "Dropping obj by equality/missing during delete %s == %s",
+                                   strong,
+                                   contained)
             return None
         else:
             self._updateContainerLM(container)
@@ -582,27 +587,25 @@ class ContainedStorage(PersistentPropertyHolder, ModDateTrackingObject):
     def cleanBroken(self):
         result = 0
         for container in self.itervalues():
-            is_mapping = isinstance(container, collections.Mapping)
-            if not is_mapping:
-                continue
-            for name, value in list(container.items()):
-                try:
-                    value = self._v_wrap(value)
-                    if value is not None:
-                        if IBroken.providedBy(value):
-                            result += 1
-                            del container[name]
-                            logger.warning("Removing broken object %s,%s",
-                                           name, type(value))
-                        elif hasattr(value, '_p_activate'):
-                            # pylint: disable=protected-access
-                            value._p_activate()
-                except POSError:
-                    result += 1
-                    del container[name]
-                    logger.warn("Removing broken object %s,%s",
-                                name,
-                                type(value))
+            if isinstance(container, collections.Mapping):
+                for name, value in list(container.items()):
+                    try:
+                        value = self._v_wrap(value)
+                        if value is not None:
+                            if IBroken.providedBy(value):
+                                result += 1
+                                del container[name]
+                                logger.warning("Removing broken object %s,%s",
+                                               name, type(value))
+                            elif hasattr(value, '_p_activate'):
+                                # pylint: disable=protected-access
+                                value._p_activate()
+                    except POSError:
+                        result += 1
+                        del container[name]
+                        logger.warning("Removing broken object %s,%s",
+                                       name,
+                                       type(value))
         return result
 
     def __iter__(self):

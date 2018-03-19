@@ -10,6 +10,9 @@ entry_points = {
 TESTS_REQUIRE = [
     'fudge',
     'nti.testing',
+    'transaction',
+    'zope.dottedname',
+    'zope.site',
     'zope.testrunner',
 ]
 
@@ -26,8 +29,8 @@ setup(
     author_email='jason@nextthought.com',
     description="NTI Datastructures",
     long_description=(
-        _read('README.rst') 
-        + '\n\n' 
+        _read('README.rst')
+        + '\n\n'
         + _read("CHANGES.rst")
     ),
     license='Apache',
@@ -69,7 +72,9 @@ setup(
         'zope.container',
         'zope.deferredimport',
         'zope.interface',
+        'zope.keyreference',
         'zope.location',
+        'zope.security',
     ],
     extras_require={
         'test': TESTS_REQUIRE,
