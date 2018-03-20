@@ -151,9 +151,10 @@ class VolatileFunctionProperty(PropertyHoldingPersistent):
         self.default = default
 
     def __get__(self, instance, unused_owner=None):
-        if instance is None:  # pragma: no cover
-            return self
-        return getattr(instance, self.volatile_name, self.default)
+        result = self
+        if instance is not None:
+            result = getattr(instance, self.volatile_name, self.default)
+        return result
 
     def __set__(self, instance, value):
         setattr(instance, self.volatile_name, value)
