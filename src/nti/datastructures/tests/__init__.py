@@ -36,8 +36,8 @@ from nti.testing.layers import ConfiguringLayerMixin
 current_mock_db = None
 current_transaction = None
 root_name = 'nti.dataserver'
- 
- 
+
+
 def install_main(conn):
     root = conn.root()
     root_folder = rootFolder()
@@ -46,8 +46,8 @@ def install_main(conn):
     conn.add(root_sm)
     root_folder.setSiteManager(root_sm)
     root[root_name] = root_folder
- 
- 
+
+
 def init_db(db, conn=None):
     conn = db.open() if conn is None else conn
     global current_transaction
@@ -55,20 +55,20 @@ def init_db(db, conn=None):
         current_transaction = conn
     install_main(conn)
     return conn
- 
- 
+
+
 class mock_db_trans(object):
- 
+
     def __init__(self, db=None):
         self.conn = None
         self._site_cm = None
         self.db = db or current_mock_db
- 
+
     def _check(self, conn):
         root = conn.root()
         if root_name not in root:
             install_main(conn)
- 
+
     def __enter__(self):
         transaction.begin()
         self.conn = conn = self.db.open()
@@ -79,7 +79,7 @@ class mock_db_trans(object):
         self._site_cm = currentSite(sitemanc)
         self._site_cm.__enter__()
         return conn
- 
+
     def __exit__(self, t, v, tb):
         result = self._site_cm.__exit__(t, v, tb)
         global current_transaction
@@ -101,24 +101,25 @@ class mock_db_trans(object):
                 raise
         reset_db_caches(self.db)
         return result
- 
- 
+
+
 def reset_db_caches(db=None):
     if db is not None:
-        db.pool.map(lambda conn: conn.cacheMinimize())
- 
- 
+        for conn in db.pool:
+            conn.cacheMinimize()
+
+
 def _mock_ds_wrapper_for(func, db, teardown=None):
- 
+
     @functools.wraps(func)
     def f(*args):
         global current_mock_db
         current_mock_db = db
         init_db(db)
- 
+
         sitemanc = SiteManagerContainer()
         sitemanc.setSiteManager(LocalSiteManager(None))
- 
+
         with currentSite(sitemanc):
             assert component.getSiteManager() == sitemanc.getSiteManager()
             try:
@@ -128,8 +129,8 @@ def _mock_ds_wrapper_for(func, db, teardown=None):
                 if teardown:
                     teardown()
     return f
- 
- 
+
+
 def WithMockDS(*args):
     def teardown():
         return None
